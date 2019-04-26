@@ -1,5 +1,5 @@
 import React from 'react';
-import { CameraRoll, Image, FlatList, Platform, StyleSheet, Text, TouchableOpacity, View, Dimensions } from 'react-native';
+import { ActivityIndicator, CameraRoll, Dimensions, FlatList, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import NaviBar, { getSafeAreaInset } from 'react-native-pure-navigation-bar';
 import PageKeys from './PageKeys';
 
@@ -10,22 +10,30 @@ export default class extends React.PureComponent {
         assetType: 'Photos',
         groupTypes: 'All',
     };
-    
+
     constructor(props) {
         super(props);
         this.state = {
             data: [],
             selectedItems: [],
+            loading: false,
         };
     }
 
     componentDidMount() {
         Dimensions.addEventListener('change', this._onWindowChanged);
+        let finish = false;
+        setTimeout(()=>{
+            if (!finish){
+                this.setState({loading:true})
+            }
+        },600);
         CameraRoll.getPhotos({
             first: 1000000,
             groupTypes: Platform.OS === 'ios' ? this.props.groupTypes : undefined,
             assetType: this.props.assetType,
         }).then((result) => {
+            finish = true;
             const arr = result.edges.map(item => item.node);
             const dict = arr.reduce((prv, cur) => {
                 const curValue = {
@@ -53,7 +61,7 @@ export default class extends React.PureComponent {
                     }
                 })
                 .map(key => ({name: key, value: dict[key]}));
-            this.setState({data});
+            this.setState({data, loading: false});
         });
     }
 
@@ -76,13 +84,22 @@ export default class extends React.PureComponent {
                     rightElement={this.props.cancelLabel}
                     onRight={this._clickCancel}
                 />
-                <FlatList
-                    style={[styles.listView, style]}
-                    data={this.state.data}
-                    renderItem={this._renderItem}
-                    keyExtractor={(item) => item.name}
-                    extraData={this.state}
-                />
+                {this.state.loading ? (
+                    <View style={styles.loading}>
+                        <ActivityIndicator size={'small'} color={'#fc3b39'} />
+                        <Text style={{marginLeft: 4}}>
+                            {'数据加载中..'}
+                        </Text>
+                    </View>
+                ) : (
+                    <FlatList
+                        style={[styles.listView, style]}
+                        data={this.state.data}
+                        renderItem={this._renderItem}
+                        keyExtractor={(item) => item.name}
+                        extraData={this.state}
+                    />
+                )}
             </View>
         );
     }
@@ -145,6 +162,7 @@ export default class extends React.PureComponent {
 }
 
 const styles = StyleSheet.create({
+    loading: {justifyContent: 'center', alignItems: 'center', flexDirection: 'row', flex: 1},
     view: {
         flex: 1,
         backgroundColor: 'white',
