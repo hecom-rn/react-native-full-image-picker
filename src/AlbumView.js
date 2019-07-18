@@ -100,7 +100,19 @@ export default class extends React.PureComponent {
         );
     };
 
+    _convertLocalIdentifierToAssetLibrary = (localIdentifier, ext) => {
+        const hash =  localIdentifier.uri.split('/')[2];
+        localIdentifier.uri = `assets-library://asset/asset.${ext}?id=${hash}&ext=${ext}`;
+        return localIdentifier;
+    };
+
     _onFinish = (data) => {
+        // convert "ph://*" to "assets-library://*"
+        if (this.props.autoConvertPath && Platform.OS === 'ios' && data[0].uri.indexOf('ph://') === 0) {
+            const temp = data.map(item => this._convertLocalIdentifierToAssetLibrary(item, 'jpg'));
+            this.props.callback && this.props.callback(temp); 
+            return;
+        }
         if (this.props.autoConvertPath && Platform.OS === 'ios') {
             const promises = data.map((item, index) => {
                 const {uri} = item;
