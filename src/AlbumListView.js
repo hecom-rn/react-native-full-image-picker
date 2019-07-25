@@ -6,7 +6,7 @@ import PageKeys from './PageKeys';
 export default class extends React.PureComponent {
     static defaultProps = {
         maxSize: 1,
-        autoConvertPath: true,
+        autoConvertPath: false,
         assetType: 'Photos',
         groupTypes: 'All',
     };

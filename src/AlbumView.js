@@ -109,10 +109,8 @@ export default class extends React.PureComponent {
 
     _onFinish = (data) => {
         // convert "ph://*" to "assets-library://*"
-        if (this.props.autoConvertPath && Platform.OS === 'ios' && data.length > 0 && data[0].uri.indexOf('ph://') === 0) {
-            const temp = data.map(item => this._convertLocalIdentifierToAssetLibrary(item, 'jpg'));
-            this.props.callback && this.props.callback(temp); 
-            return;
+        if (Platform.OS === 'ios' && data.length > 0 && data[0].uri.indexOf('ph://') === 0) {
+            data = data.map(item => this._convertLocalIdentifierToAssetLibrary(item, 'jpg'));
         }
         if (this.props.autoConvertPath && Platform.OS === 'ios') {
             const promises = data.map((item, index) => {
@@ -138,11 +136,16 @@ export default class extends React.PureComponent {
                     promise = RNFS.copyAssetsFileIOS(uri, destPath, 0, 0);
                 } else if (item.type === 'ALAssetTypeVideo') {
                     promise = RNFS.copyAssetsVideoIOS(uri, destPath);
+                } else if (item.type === 'image') { // support ph://*  photo type
+                    promise = RNFS.copyAssetsFileIOS(uri, destPath, 0, 0);
                 } else {
                     throw new Error('Unknown URI：' + uri);
                 }
                 return promise
                     .then((resultUri) => {
+                        if (resultUri.indexOf('file://') === 0) { // clear file prefix
+                            resultUri = resultUri.split('/')[2];
+                        }
                         data[index].uri = resultUri;
                     });
             });
