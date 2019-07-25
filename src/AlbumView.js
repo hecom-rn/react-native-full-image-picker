@@ -103,6 +103,7 @@ export default class extends React.PureComponent {
     _convertLocalIdentifierToAssetLibrary = (localIdentifier, ext) => {
         const hash =  localIdentifier.uri.split('/')[2];
         localIdentifier.uri = `assets-library://asset/asset.${ext}?id=${hash}&ext=${ext}`;
+        localIdentifier.hash = hash;
         return localIdentifier;
     };
 
