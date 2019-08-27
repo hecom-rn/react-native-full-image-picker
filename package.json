@@ -22,6 +22,7 @@
     },
     "homepage": "https://github.com/gaoxiaosong/react-native-full-image-picker#readme",
     "dependencies": {
+        "@react-native-community/cameraroll": "^1.2.1",
         "react-native-camera": "^1.8.0",
         "react-native-fs": "^2.13.3",
         "react-native-pure-navigation-bar": "^1.4.7",
