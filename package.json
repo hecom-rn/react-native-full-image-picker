@@ -4,6 +4,10 @@
     "private": false,
     "description": "Support taking photo, video recording or selecting from photo library.",
     "main": "src/index.js",
+    "scripts": {
+      "patch": "npm version patch -m 'Bump version %s';git push origin master --tags",
+      "minor": "npm version minor -m 'Bump version %s';git push origin master --tags"
+    },
     "repository": {
         "type": "git",
         "url": "https://github.com/gaoxiaosong/react-native-full-image-picker.git"
