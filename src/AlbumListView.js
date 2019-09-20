@@ -24,18 +24,18 @@ export default class extends React.PureComponent {
     componentDidMount() {
         Dimensions.addEventListener('change', this._onWindowChanged);
         let finish = false;
-        setTimeout(()=>{
-            if (!finish){
-                this.setState({loading:true})
+        setTimeout(() => {
+            if (!finish) {
+                this.setState({loading: true})
             }
-        },600);
+        }, 600);
         CameraRoll.getPhotos({
             first: 1000000,
             groupTypes: Platform.OS === 'ios' ? this.props.groupTypes : undefined,
             assetType: this.props.assetType,
-        }).then((result) => {
+        }).then(({edges = []} = {}) => {
             finish = true;
-            const arr = result.edges.map(item => item.node);
+            const arr = edges.map(item => item.node);
             const dict = arr.reduce((prv, cur) => {
                 const curValue = {
                     type: cur.type,
