@@ -1,12 +1,12 @@
 {
     "name": "react-native-full-image-picker",
-    "version": "1.2.11",
+    "version": "1.3.0",
     "private": false,
     "description": "Support taking photo, video recording or selecting from photo library.",
     "main": "src/index.js",
     "scripts": {
-      "patch": "npm version patch -m 'Bump version %s';git push origin master --tags",
-      "minor": "npm version minor -m 'Bump version %s';git push origin master --tags"
+        "patch": "npm version patch -m 'Bump version %s';git push origin master --tags",
+        "minor": "npm version minor -m 'Bump version %s';git push origin master --tags"
     },
     "repository": {
         "type": "git",
