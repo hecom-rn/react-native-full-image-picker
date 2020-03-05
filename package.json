@@ -1,5 +1,5 @@
 {
-    "name": "@hecom/react-native-full-image-picker",
+    "name": "@hecom-rn/react-native-full-image-picker",
     "version": "1.3.1",
     "private": false,
     "description": "Support taking photo, video recording or selecting from photo library.",
