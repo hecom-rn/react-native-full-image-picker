@@ -1,7 +1,7 @@
 # react-native-full-image-picker
 
 [![npm version](https://img.shields.io/npm/v/@hecom-rn/react-native-full-image-picker.svg?style=flat)](https://www.npmjs.com/package/@hecom-rn/react-native-full-image-picker)
-[![Build Status](https://travis-ci.org/gaoxiaosong/react-native-full-image-picker.svg?branch=master)](https://travis-ci.org/gaoxiaosong/react-native-full-image-picker)
+[![Build Status](https://travis-ci.org/hecom-rn/react-native-full-image-picker.svg?branch=master)](https://travis-ci.org/hecom-rn/react-native-full-image-picker)
 
 [中文说明](https://www.jianshu.com/p/4f7296753013)
 
