@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, BackHandler, InteractionManager, Platform } from 'react-native';
-import { createStackNavigator } from 'react-navigation';
+import { createStackNavigator } from '@react-navigation/stack';
 import PageKeys from './PageKeys';
 import CameraView from './CameraView';
 import AlbumListView from './AlbumListView';
@@ -52,32 +52,37 @@ export default class extends React.PureComponent {
                 );
             }
         }
+        const Stack = createStackNavigator();
         const scenes = Object.keys(allscenes)
             .reduce((prv, cur) => {
-                prv[cur] = {
-                    screen: withUnwrap(allscenes[cur]),
-                    navigationOptions: {
-                        gesturesEnabled: false,
-                    }
-                };
+                prv.push(
+                    <Stack.Screen
+                        name={cur}
+                        component={withUnwrap(allscenes[cur])}
+                        options={{ gesturesEnabled: false }}
+                    />
+                );
                 return prv;
-            }, {});
-        const NavigationDoor = createStackNavigator(
-            scenes,
-            {
-                initialRouteName: this.props.initialRouteName,
-                initialRouteParams: {
+            }, []);
+
+        const NavigationDoor = (
+            <Stack.navigation
+                initialRouteName={this.props.initialRouteName}
+                initialRouteParams={{
                     ...this.props,
                     callback: callback,
-                },
-                headerMode: 'none',
-            });
+                }}
+                headerMode={'none'}
+            >
+                {scenes}
+            </Stack.navigation>
+        )
         return (
             <Modal
                 animationType={'slide'}
                 supportedOrientations={this.props.supportedOrientations}
             >
-                <NavigationDoor />
+                {NavigationDoor}
             </Modal>
         );
     }
