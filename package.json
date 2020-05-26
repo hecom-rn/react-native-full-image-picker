@@ -28,11 +28,11 @@
     "dependencies": {
         "@react-native-community/cameraroll": "^1.2.1",
         "react-native-fs": "^2.13.3",
-        "react-native-pure-navigation-bar": "^1.4.7",
         "react-native-root-siblings": "^3.1.7"
     },
     "peerDependencies": {
         "react-native-video": "*",
-        "react-native-camera": "*"
+        "react-native-camera": "*",
+        "react-native-pure-navigation-bar": "*"
     }
 }
