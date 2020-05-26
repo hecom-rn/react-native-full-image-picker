@@ -46,7 +46,7 @@ export default class extends React.PureComponent {
             render() {
                 return (
                     <WrappedComponent
-                        {...this.props.navigation.state.params}
+                        {...this.props.route.params}
                         navigation={this.props.navigation}
                     />
                 );
