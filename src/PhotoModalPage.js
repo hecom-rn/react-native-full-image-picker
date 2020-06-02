@@ -1,6 +1,7 @@
 import React from 'react';
 import { Modal, BackHandler, InteractionManager, Platform } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { NavigationContainer } from '@react-navigation/native';
 import PageKeys from './PageKeys';
 import CameraView from './CameraView';
 import AlbumListView from './AlbumListView';
@@ -42,10 +43,15 @@ export default class extends React.PureComponent {
             [PageKeys.album_view]: AlbumView,
             [PageKeys.preview]: PreviewMultiView,
         };
+        const defaultProp = {
+            ...this.props,
+            callback: callback,
+        }
         const withUnwrap = (WrappedComponent) => class extends React.PureComponent {
             render() {
                 return (
                     <WrappedComponent
+                        {...defaultProp}
                         {...this.props.route.params}
                         navigation={this.props.navigation}
                     />
@@ -59,30 +65,30 @@ export default class extends React.PureComponent {
                     <Stack.Screen
                         name={cur}
                         component={withUnwrap(allscenes[cur])}
-                        options={{ gesturesEnabled: false }}
+                        options={()=> {
+                            return { gesturesEnabled: false }
+                        }}
                     />
                 );
                 return prv;
             }, []);
 
         const NavigationDoor = (
-            <Stack.navigation
+            <Stack.Navigator
                 initialRouteName={this.props.initialRouteName}
-                initialRouteParams={{
-                    ...this.props,
-                    callback: callback,
-                }}
                 headerMode={'none'}
             >
                 {scenes}
-            </Stack.navigation>
+            </Stack.Navigator>
         )
         return (
             <Modal
                 animationType={'slide'}
                 supportedOrientations={this.props.supportedOrientations}
             >
-                {NavigationDoor}
+                <NavigationContainer>
+                    {NavigationDoor}
+                </NavigationContainer>
             </Modal>
         );
     }
