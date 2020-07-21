@@ -27,12 +27,16 @@
     "homepage": "https://github.com/hecom-rn/react-native-full-image-picker#readme",
     "dependencies": {
         "@react-native-community/cameraroll": "^1.2.1",
-        "react-native-fs": "^2.13.3",
-        "react-native-root-siblings": "^3.1.7"
+        "react-native-fs": "^2.13.3"
+    },
+    "devDependencies": {
+        "react-native-root-siblings": "^4.0.6"
+
     },
     "peerDependencies": {
         "react-native-video": "*",
         "react-native-camera": "*",
-        "react-native-pure-navigation-bar": "*"
+        "react-native-pure-navigation-bar": "*",
+        "react-native-root-siblings": "*"
     }
 }
