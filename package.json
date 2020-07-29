@@ -31,7 +31,6 @@
     },
     "devDependencies": {
         "react-native-root-siblings": "^4.0.6"
-
     },
     "peerDependencies": {
         "react-native-video": "*",
