@@ -33,6 +33,6 @@
     "peerDependencies": {
         "react-native-video": "*",
         "react-native-camera": "*",
-        "react-native-pure-navigation-bar": "*"
+        "@hecom/react-native-pure-navigation-bar": "*"
     }
 }

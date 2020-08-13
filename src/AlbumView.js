@@ -1,6 +1,6 @@
 import React from 'react';
 import { Alert, Dimensions, FlatList, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import NaviBar, { getSafeAreaInset } from 'react-native-pure-navigation-bar';
+import NaviBar, { getSafeAreaInset } from '@hecom/react-native-pure-navigation-bar';
 import * as RNFS from 'react-native-fs';
 import PageKeys from './PageKeys';
 
