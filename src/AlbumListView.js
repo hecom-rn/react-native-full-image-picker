@@ -1,6 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, Dimensions, FlatList, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import NaviBar, { getSafeAreaInset } from 'react-native-pure-navigation-bar';
+import NaviBar, { getSafeAreaInset } from '@hecom/react-native-pure-navigation-bar';
 import CameraRoll from "@react-native-community/cameraroll";
 import PageKeys from './PageKeys';
 
