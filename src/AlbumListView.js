@@ -33,6 +33,7 @@ export default class extends React.PureComponent {
             first: 1000000,
             groupTypes: Platform.OS === 'ios' ? this.props.groupTypes : undefined,
             assetType: this.props.assetType,
+            include:['filename','fileSize','imageSize','location']
         }).then(({edges = []} = {}) => {
             finish = true;
             const arr = edges.map(item => item.node);
