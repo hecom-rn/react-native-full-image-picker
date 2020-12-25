@@ -12,9 +12,7 @@ import {
 } from 'react-native';
 import NaviBar, {getSafeAreaInset} from '@hecom/react-native-pure-navigation-bar';
 import CameraRoll from "@react-native-community/cameraroll";
-import {exists} from 'react-native-fs';
 import PageKeys from './PageKeys';
-import Video from 'react-native-video';
 
 export default class extends React.PureComponent {
     static defaultProps = {
@@ -45,9 +43,9 @@ export default class extends React.PureComponent {
             first: 1000000,
             groupTypes: Platform.OS === 'ios' ? this.props.groupTypes : undefined,
             assetType: this.props.assetType,
-            include:['playableDuration'],
+            include: ['filename', 'fileSize', 'imageSize', 'location', 'playableDuration'],
         }).then(({edges = []} = {}) => {
-            (async ()=> {
+            (async () => {
                 finish = true;
                 const arr = edges.map(item => item.node);
                 // const arr1 = edges.map(item => item.node);
