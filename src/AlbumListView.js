@@ -1,6 +1,16 @@
 import React from 'react';
-import { ActivityIndicator, Dimensions, FlatList, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import NaviBar, { getSafeAreaInset } from '@hecom/react-native-pure-navigation-bar';
+import {
+    ActivityIndicator,
+    Dimensions,
+    FlatList,
+    Image,
+    Platform,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native';
+import NaviBar, {getSafeAreaInset} from '@hecom/react-native-pure-navigation-bar';
 import CameraRoll from "@react-native-community/cameraroll";
 import PageKeys from './PageKeys';
 
@@ -33,37 +43,49 @@ export default class extends React.PureComponent {
             first: 1000000,
             groupTypes: Platform.OS === 'ios' ? this.props.groupTypes : undefined,
             assetType: this.props.assetType,
-            include:['filename','fileSize','imageSize','location']
+            include: ['filename', 'fileSize', 'imageSize', 'location', 'playableDuration'],
         }).then(({edges = []} = {}) => {
-            finish = true;
-            const arr = edges.map(item => item.node);
-            const dict = arr.reduce((prv, cur) => {
-                const curValue = {
-                    type: cur.type,
-                    location: cur.location,
-                    timestamp: cur.timestamp,
-                    ...cur.image,
-                };
-                if (!prv[cur.group_name]) {
-                    prv[cur.group_name] = [curValue];
-                } else {
-                    prv[cur.group_name].push(curValue);
-                }
-                return prv;
-            }, {});
-            const data = Object.keys(dict)
-                .sort((a, b) => {
-                    const rootIndex = 'Camera Roll';
-                    if (a === rootIndex) {
-                        return -1;
-                    } else if (b === rootIndex) {
-                        return 1;
+            (async () => {
+                finish = true;
+                const arr = edges.map(item => item.node);
+                // const arr1 = edges.map(item => item.node);
+                // const promiseArray = [];
+                // arr1.forEach(node => promiseArray.push(exists(node.image.uri)));
+                // const checkResult = await Promise.all(promiseArray);
+                // const arr = arr1.filter((node, index) => {
+                //     const exist = checkResult[index];
+                //     if (!exist) {
+                //         console.log(`${node.image.uri} is not exist!!!`);
+                //     }
+                //     return exist;
+                // })
+                const dict = arr.reduce((prv, cur) => {
+                    const curValue = {
+                        type: cur.type,
+                        location: cur.location,
+                        timestamp: cur.timestamp,
+                        ...cur.image,
+                    };
+                    if (!prv[cur.group_name]) {
+                        prv[cur.group_name] = [curValue];
                     } else {
-                        return a < b ? -1 : 1;
+                        prv[cur.group_name].push(curValue);
                     }
-                })
-                .map(key => ({name: key, value: dict[key]}));
-            this.setState({data, loading: false});
+                    return prv;
+                }, {});
+                const data = Object.keys(dict)
+                    .sort((a, b) => {
+                        const rootIndex = 'Camera Roll';
+                        if (a === rootIndex) {
+                            return -1;
+                        } else if (b === rootIndex) {
+                            return 1;
+                        } else {
+                            return a < b ? -1 : 1;
+                        }
+                    }).map(key => ({name: key, value: dict[key]}));
+                this.setState({data, loading: false});
+            })();
         });
     }
 
@@ -88,7 +110,7 @@ export default class extends React.PureComponent {
                 />
                 {this.state.loading ? (
                     <View style={styles.loading}>
-                        <ActivityIndicator size={'small'} color={'#fc3b39'} />
+                        <ActivityIndicator size={'small'} color={'#fc3b39'}/>
                         <Text style={{marginLeft: 4}}>
                             {'数据加载中..'}
                         </Text>
@@ -111,6 +133,8 @@ export default class extends React.PureComponent {
         const selectedItems = this.state.selectedItems
             .filter(i => itemUris.has(i.uri));
         const selectedCount = selectedItems.length;
+        const width = 44;
+        const height = 44;
         return (
             <TouchableOpacity onPress={this._clickRow.bind(this, item)}>
                 <View style={styles.cell}>
@@ -194,6 +218,9 @@ const styles = StyleSheet.create({
         overflow: 'hidden',
         width: 44,
         height: 44,
+    },
+    video: {
+        borderRadius: 5,
     },
     text: {
         fontSize: 16,

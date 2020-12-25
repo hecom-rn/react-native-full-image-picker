@@ -1,6 +1,6 @@
 import React from 'react';
-import { Alert, Dimensions, FlatList, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import NaviBar, { getSafeAreaInset } from '@hecom/react-native-pure-navigation-bar';
+import {Alert, Dimensions, FlatList, Image, Platform, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import NaviBar, {getSafeAreaInset} from '@hecom/react-native-pure-navigation-bar';
 import * as RNFS from 'react-native-fs';
 import PageKeys from './PageKeys';
 
@@ -54,9 +54,25 @@ export default class extends React.PureComponent {
         const isSelected = this.state.selectedItems.some(obj => obj.uri === item.uri);
         const backgroundColor = isSelected ? '#e15151' : 'transparent';
         const hasIcon = isSelected || this.state.selectedItems.length < this.props.maxSize;
+        const isVideo = item.type.includes('video');
+        const convertDuration = (playableDuration) => {
+            const prefixWithZero = (time) => {
+                if (time) {
+                    return time < 10 ? `0${time}` : `${time}`
+                }
+                return '00';
+            };
+            let duration = playableDuration;
+            if (playableDuration) {
+                let minute = Math.floor(playableDuration / 60);
+                const second = playableDuration % 60;
+                duration = `${prefixWithZero(minute)}:${prefixWithZero(second)}`;
+            }
+            return duration;
+        }
         return (
             <TouchableOpacity onPress={this._clickCell.bind(this, item)}>
-                <View style={{padding: 1}}>
+                <View style={{padding: 1, justifyContent: 'flex-end'}}>
                     <Image
                         key={index}
                         source={{uri: item.uri}}
@@ -75,6 +91,18 @@ export default class extends React.PureComponent {
                             </View>
                         </View>
                     )}
+                    {isVideo && (
+                        <Text style={{
+                            position: 'absolute',
+                            color: '#ffffff',
+                            marginBottom: 20,
+                            backgroundColor: '#888888',
+                            paddingHorizontal: 5
+                        }}>
+                            {convertDuration(item.playableDuration)}
+                        </Text>
+                    )
+                    }
                 </View>
             </TouchableOpacity>
         );
@@ -101,7 +129,7 @@ export default class extends React.PureComponent {
     };
 
     _convertLocalIdentifierToAssetLibrary = (localIdentifier, ext) => {
-        const hash =  localIdentifier.uri.split('/')[2];
+        const hash = localIdentifier.uri.split('/')[2];
         localIdentifier.uri = `assets-library://asset/asset.${ext}?id=${hash}&ext=${ext}`;
         localIdentifier.hash = hash;
         return localIdentifier;
