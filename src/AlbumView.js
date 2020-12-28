@@ -216,6 +216,8 @@ export default class extends React.PureComponent {
             });
         } else if (this.state.selectedItems.length >= this.props.maxSize) {
             Alert.alert('', this.props.maxSizeChooseAlert(this.props.maxSize));
+        } else if (itemuri.type.includes('video') && (itemuri.fileSize / (1000 * 1000)) > this.props.maxVideoFileSize) {
+            Alert.alert('', this.props.maxVideoFileSizeAlert(this.props.maxVideoFileSize))
         } else {
             this.setState({
                 selectedItems: [...this.state.selectedItems, itemuri]

@@ -19,6 +19,7 @@ export default class extends React.PureComponent {
         choosePhotoTitle: 'Choose Photo',
         maxSizeChooseAlert: (number) => 'You can only choose ' + number + ' photos at most',
         maxSizeTakeAlert: (number) => 'You can only take ' + number + ' photos at most',
+        maxVideoFileSizeAlert: (number) => 'you can only choose video smaller than ' + number + 'MB',
         supportedOrientations: ['portrait', 'landscape'],
     };
 
@@ -65,8 +66,8 @@ export default class extends React.PureComponent {
                     <Stack.Screen
                         name={cur}
                         component={withUnwrap(allscenes[cur])}
-                        options={()=> {
-                            return { gesturesEnabled: false }
+                        options={() => {
+                            return {gesturesEnabled: false}
                         }}
                     />
                 );
