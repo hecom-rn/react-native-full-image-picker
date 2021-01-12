@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Dimensions, Image, Platform, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Image, Platform, StatusBar, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { RNCamera } from 'react-native-camera';
 import { getSafeAreaInset } from '@hecom/react-native-pure-navigation-bar';
 import Video from 'react-native-video';
@@ -41,12 +41,12 @@ export default class extends React.PureComponent {
 
     render() {
         return (
-            <View style={styles.container}>
+            <SafeAreaView style={styles.container}>
                 <StatusBar hidden={true} />
                 {!this.state.isPreview ? this._renderCameraView() : this._renderPreviewView()}
                 {!this.state.isPreview && this._renderTopView()}
                 {this._renderBottomView()}
-            </View>
+            </SafeAreaView>
         );
     }
 
@@ -57,7 +57,7 @@ export default class extends React.PureComponent {
             left: safeArea.left,
             right: safeArea.right,
         };
-        const {flashMode} = this.state;
+        const { flashMode } = this.state;
         let image;
         switch (flashMode) {
             case 1:
@@ -100,7 +100,7 @@ export default class extends React.PureComponent {
     };
 
     _renderPreviewView = () => {
-        const {width, height} = Dimensions.get('window');
+        const { width, height } = Dimensions.get('window');
         const safeArea = getSafeAreaInset();
         const style = {
             flex: 1,
@@ -111,20 +111,20 @@ export default class extends React.PureComponent {
             backgroundColor: 'black',
         };
         return (
-            <View style={{width, height}}>
+            <View style={{ width, height }}>
                 {this.props.isVideo ? (
                     <Video
-                        source={{uri: this.state.data[0].uri}}
+                        source={{ uri: this.state.data[0].uri }}
                         ref={(ref) => this.player = ref}
                         style={style}
                     />
                 ) : (
-                    <Image
-                        resizeMode='contain'
-                        style={style}
-                        source={{uri: this.state.data[0].uri}}
-                    />
-                )}
+                        <Image
+                            resizeMode='contain'
+                            style={style}
+                            source={{ uri: this.state.data[0].uri }}
+                        />
+                    )}
             </View>
         );
     };
@@ -157,7 +157,7 @@ export default class extends React.PureComponent {
                 <View style={styles.previewView}>
                     <Image
                         style={styles.previewImage}
-                        source={{uri: this.state.data[this.state.data.length - 1].uri}}
+                        source={{ uri: this.state.data[this.state.data.length - 1].uri }}
                     />
                     <Text style={styles.previewText}>
                         {text}
@@ -186,7 +186,7 @@ export default class extends React.PureComponent {
         return (
             <TouchableOpacity
                 onPress={this.props.isVideo ? this._clickRecordVideo : this._clickTakePicture}
-                style={[styles.takeView, {left}]}
+                style={[styles.takeView, { left }]}
             >
                 <Image style={styles.takeImage} source={icon} />
             </TouchableOpacity>
@@ -205,30 +205,36 @@ export default class extends React.PureComponent {
 
     _clickTakePicture = async () => {
         if (this.camera) {
-            const item = await this.camera.takePictureAsync({
-                mirrorImage: this.state.sideType === RNCamera.Constants.Type.front,
-                fixOrientation: true,
-                forceUpOrientation: true,
-                ...this.props.pictureOptions
-            });
-            if (Platform.OS === 'ios') {
-                if (item.uri.startsWith('file://')) {
-                    item.uri = item.uri.substring(7);
+            try {
+                const item = await this.camera.takePictureAsync({
+                    mirrorImage: this.state.sideType === RNCamera.Constants.Type.front,
+                    fixOrientation: true,
+                    forceUpOrientation: true,
+                    ...this.props.pictureOptions
+                });
+                if (Platform.OS === 'ios') {
+                    if (item.uri.startsWith('file://')) {
+                        item.uri = item.uri.substring(7);
+                    }
                 }
-            }
-            if (this.props.maxSize > 1) {
-                if (this.state.data.length >= this.props.maxSize) {
-                    Alert.alert('', this.props.maxSizeTakeAlert(this.props.maxSize));
+                if (this.props.maxSize > 1) {
+                    if (this.state.data.length >= this.props.maxSize) {
+                        Alert.alert('', this.props.maxSizeTakeAlert(this.props.maxSize));
+                    } else {
+                        this.setState({
+                            data: [...this.state.data, item],
+                        });
+                    }
                 } else {
                     this.setState({
-                        data: [...this.state.data, item],
+                        data: [item],
+                        isPreview: true,
                     });
                 }
-            } else {
-                this.setState({
-                    data: [item],
-                    isPreview: true,
-                });
+            } catch (err) {
+                console.log(err);
+                this.camera.pausePreview();
+                this.camera.resumePreview();
             }
         }
     };
@@ -268,12 +274,12 @@ export default class extends React.PureComponent {
     _clickSwitchSide = () => {
         const target = this.state.sideType === RNCamera.Constants.Type.back
             ? RNCamera.Constants.Type.front : RNCamera.Constants.Type.back;
-        this.setState({sideType: target});
+        this.setState({ sideType: target });
     };
 
     _clickFlashMode = () => {
         const newMode = (this.state.flashMode + 1) % this.flashModes.length;
-        this.setState({flashMode: newMode});
+        this.setState({ flashMode: newMode });
     };
 
     _clickPreview = () => {
@@ -307,6 +313,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: 'black',
+        marginTop: Platform.OS === 'ios' ? 0 : StatusBar.currentHeight,
     },
     top: {
         position: 'absolute',
