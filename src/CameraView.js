@@ -12,7 +12,7 @@ export default class extends React.PureComponent {
         flashMode: 0,
         videoQuality: RNCamera.Constants.VideoQuality["480p"],
         pictureOptions: {},
-        recordingOptions: {},
+        recordingOptions: {}
     };
 
     constructor(props) {
@@ -93,7 +93,7 @@ export default class extends React.PureComponent {
                 defaultVideoQuality={this.props.videoQuality}
                 flashMode={this.flashModes[this.state.flashMode]}
                 style={styles.camera}
-                captureAudio={true}
+                captureAudio={this.props.isVideo}
                 fixOrientation={true}
             />
         );
