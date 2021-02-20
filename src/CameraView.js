@@ -29,6 +29,7 @@ export default class extends React.PureComponent {
             flashMode: this.props.flashMode,
             isRecording: false,
         };
+        this.takePictureing = false;
     }
 
     componentDidMount() {
@@ -204,14 +205,17 @@ export default class extends React.PureComponent {
     };
 
     _clickTakePicture = async () => {
+        if(this.takePictureing) return;
         if (this.camera) {
             try {
+                this.takePictureing = true;
                 const item = await this.camera.takePictureAsync({
                     mirrorImage: this.state.sideType === RNCamera.Constants.Type.front,
                     fixOrientation: true,
                     forceUpOrientation: true,
                     ...this.props.pictureOptions
                 });
+                this.takePictureing = false;
                 if (Platform.OS === 'ios') {
                     if (item.uri.startsWith('file://')) {
                         item.uri = item.uri.substring(7);
