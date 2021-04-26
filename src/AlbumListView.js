@@ -59,7 +59,10 @@ export default class extends React.PureComponent {
                 //     }
                 //     return exist;
                 // })
-                const dict = arr.reduce((prv, cur) => {
+                const dict = arr.filter((item) => {
+                    return item.type;
+                })
+                .reduce((prv, cur) => {
                     const curValue = {
                         type: cur.type,
                         location: cur.location,
