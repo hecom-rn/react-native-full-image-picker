@@ -70,6 +70,7 @@ export default class extends React.PureComponent {
             }
             return duration;
         }
+        const label = this.state.selectedItems.findIndex((currItem)  => item.uri == currItem.uri);
         return (
             <TouchableOpacity onPress={this._clickCell.bind(this, item)}>
                 <View style={{padding: 1, justifyContent: 'flex-end'}}>
@@ -83,10 +84,11 @@ export default class extends React.PureComponent {
                         <View style={styles.selectView}>
                             <View style={[styles.selectIcon, {backgroundColor}]}>
                                 {isSelected && (
-                                    <Image
-                                        source={require('./images/check_box.png')}
-                                        style={styles.selectedIcon}
-                                    />
+                                    <Text
+                                        style={styles.selectedLabel}
+                                    >
+                                        {`${label+1}`}
+                                    </Text>
                                 )}
                             </View>
                         </View>
@@ -290,9 +292,15 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: 'transparent',
     },
-    selectedIcon: {
+    selectedLabel: {
         width: 13,
         height: 13,
+        fontSize: 10,
+        color:'white',
+        fontWeight:'bold',
+        textAlign: 'center',
+        textAlignVertical: 'center',
+        includeFontPadding: false,
     },
     bottom: {
         height: 44,
