@@ -80,6 +80,17 @@ export default class extends React.PureComponent {
                         style={{width: edge, height: edge, overflow: 'hidden'}}
                         resizeMode='cover'
                     />
+                    {hasIcon && isSelected && (
+                        <View style={{
+                            position: 'absolute',
+                            width: edge,
+                            height: edge,
+                            overflow: 'hidden',
+                            backgroundColor: '#000',
+                            opacity: 0.5
+                        }}>
+                        </View>
+                    )}
                     {hasIcon && (
                         <View style={styles.selectView}>
                             <View style={[styles.selectIcon, {backgroundColor}]}>
