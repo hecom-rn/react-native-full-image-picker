@@ -8,7 +8,7 @@ import AlbumListView from './AlbumListView';
 import AlbumView from './AlbumView';
 import PreviewMultiView from './PreviewMultiView';
 
-export default class extends React.PureComponent {
+export default class PhotoModalPage extends React.PureComponent {
     static defaultProps = {
         okLabel: 'OK',
         cancelLabel: 'Cancel',
