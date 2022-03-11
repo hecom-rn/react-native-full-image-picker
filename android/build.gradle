@@ -1,0 +1,58 @@
+apply plugin: 'com.android.library'
+
+def safeExtGet(prop, fallback) {
+    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+}
+
+def DEFAULT_COMPILE_SDK_VERSION = 27
+def DEFAULT_TARGET_SDK_VERSION = 27
+def DEFAULT_MIN_SDK_VERSION = 16
+def GLIDE_VERSION = safeExtGet("glideVersion", "4.12.0")
+def PICTURE_VERSION = safeExtGet("pictureVersion", "v3.0.5-SNAPSHOT")
+buildscript {
+    repositories {
+        maven { url "http://maven.aliyun.com/nexus/content/groups/public/" }
+        maven {
+            url 'http://maven.aliyun.com/nexus/content/repositories/releases'
+        }
+        maven {
+            url 'http://maven.aliyun.com/nexus/content/groups/public/'
+        }
+        maven {
+            url 'http://nexus-hqtn.hecom.cn/repository/android-public/'
+        }
+        maven {
+            url 'http://nexus-hqtn.hecom.cn/repository/maven-public/'
+        }
+        maven { url 'https://www.jitpack.io' }
+        jcenter()
+        google()
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:4.0.1'
+    }
+}
+
+android {
+    compileSdkVersion rootProject.hasProperty('compileSdkVersion') ? rootProject.compileSdkVersion : DEFAULT_COMPILE_SDK_VERSION
+
+    defaultConfig {
+        minSdkVersion rootProject.hasProperty('minSdkVersion') ? rootProject.minSdkVersion : DEFAULT_MIN_SDK_VERSION
+        targetSdkVersion rootProject.hasProperty('targetSdkVersion') ? rootProject.targetSdkVersion : DEFAULT_TARGET_SDK_VERSION
+        versionCode 1
+    }
+    lintOptions {
+        abortOnError false
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'com.facebook.react:react-native:+'
+    implementation "com.hecom.lib:pictureselector:${PICTURE_VERSION}"
+    implementation "com.github.bumptech.glide:glide:${GLIDE_VERSION}"
+}
