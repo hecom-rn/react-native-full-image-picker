@@ -6,8 +6,11 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.MediaMetadataRetriever;
+import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Base64;
+
+import androidx.core.content.ContextCompat;
 
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.BaseActivityEventListener;
@@ -27,6 +30,11 @@ import com.luck.picture.lib.config.PictureConfig;
 import com.luck.picture.lib.config.PictureMimeType;
 import com.luck.picture.lib.config.SelectMimeType;
 import com.luck.picture.lib.entity.LocalMedia;
+import com.luck.picture.lib.style.BottomNavBarStyle;
+import com.luck.picture.lib.style.PictureSelectorStyle;
+import com.luck.picture.lib.style.SelectMainStyle;
+import com.luck.picture.lib.style.TitleBarStyle;
+import com.luck.picture.lib.utils.DensityUtil;
 import com.luck.picture.lib.utils.PictureFileUtils;
 import com.luck.picture.lib.utils.SdkVersionUtils;
 
@@ -55,10 +63,58 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
 
     private ReadableMap cameraOptions; // 保存图片选择/相机选项
 
+    private PictureSelectorStyle selectorStyle;
+
     public RNSyanImagePickerModule(ReactApplicationContext reactContext) {
         super(reactContext);
         this.reactContext = reactContext;
+        initSelectorStyle(reactContext);
         reactContext.addActivityEventListener(mActivityEventListener);
+    }
+
+    private void initSelectorStyle(ReactApplicationContext context) {
+        selectorStyle = new PictureSelectorStyle();
+        SelectMainStyle numberSelectMainStyle = new SelectMainStyle();
+        numberSelectMainStyle.setSelectNumberStyle(true);
+        numberSelectMainStyle.setPreviewDisplaySelectGallery(true);
+        numberSelectMainStyle.setSelectBackground(R.drawable.ps_default_num_selector);
+        numberSelectMainStyle.setPreviewSelectBackground(R.drawable.ps_preview_checkbox_selector);
+        numberSelectMainStyle.setSelectNormalBackgroundResources(R.drawable.ps_select_complete_normal_bg);
+        numberSelectMainStyle.setSelectNormalTextColor(ContextCompat.getColor(context, R.color.ps_color_53575e));
+        numberSelectMainStyle.setSelectNormalText(context.getString(R.string.ps_send));
+        numberSelectMainStyle.setAdapterPreviewGalleryBackgroundResource(R.drawable.ps_preview_gallery_bg);
+        numberSelectMainStyle.setAdapterPreviewGalleryItemSize(DensityUtil.dip2px(context, 52));
+        numberSelectMainStyle.setPreviewSelectText(context.getString(R.string.ps_select));
+        numberSelectMainStyle.setPreviewSelectTextSize(14);
+        numberSelectMainStyle.setPreviewSelectTextColor(ContextCompat.getColor(context, R.color.ps_color_white));
+        numberSelectMainStyle.setPreviewSelectMarginRight(DensityUtil.dip2px(context, 6));
+        numberSelectMainStyle.setSelectBackgroundResources(R.drawable.ps_select_complete_bg);
+        numberSelectMainStyle.setSelectText(context.getString(R.string.ps_send_num));
+        numberSelectMainStyle.setSelectTextColor(ContextCompat.getColor(context, R.color.ps_color_white));
+        numberSelectMainStyle.setMainListBackgroundColor(ContextCompat.getColor(context, R.color.ps_color_black));
+
+        // 头部TitleBar 风格
+        TitleBarStyle numberTitleBarStyle = new TitleBarStyle();
+//        numberTitleBarStyle.setHideCancelButton(false);
+//        numberTitleBarStyle.setAlbumTitleRelativeLeft(true);
+//        numberTitleBarStyle.setTitleAlbumBackgroundResource(R.drawable.ps_album_bg);
+//        numberTitleBarStyle.setTitleDrawableRightResource(R.drawable.ps_ic_grey_arrow);
+        numberTitleBarStyle.setPreviewTitleLeftBackResource(R.drawable.ps_ic_normal_back);
+
+        // 底部NavBar 风格
+        BottomNavBarStyle numberBottomNavBarStyle = new BottomNavBarStyle();
+        numberBottomNavBarStyle.setBottomPreviewNarBarBackgroundColor(ContextCompat.getColor(context, R.color.ps_color_half_grey));
+        numberBottomNavBarStyle.setBottomPreviewNormalText(context.getString(R.string.ps_preview));
+        numberBottomNavBarStyle.setBottomPreviewNormalTextColor(ContextCompat.getColor(context, R.color.ps_color_9b));
+        numberBottomNavBarStyle.setBottomPreviewNormalTextSize(16);
+        numberBottomNavBarStyle.setCompleteCountTips(false);
+        numberBottomNavBarStyle.setBottomPreviewSelectText(context.getString(R.string.ps_preview_num));
+        numberBottomNavBarStyle.setBottomPreviewSelectTextColor(ContextCompat.getColor(context, R.color.ps_color_white));
+
+
+        selectorStyle.setTitleBarStyle(numberTitleBarStyle);
+        selectorStyle.setBottomBarStyle(numberBottomNavBarStyle);
+        selectorStyle.setSelectMainStyle(numberSelectMainStyle);
     }
 
     @Override
@@ -182,6 +238,7 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
         PictureSelector.create(currentActivity)
                 .openGallery(SelectMimeType.ofImage())//全部.PictureMimeType.ofAll()、图片.ofImage()、视频.ofVideo()、音频.ofAudio()
                 .setImageEngine(GlideEngine.createGlideEngine())
+                .setSelectorUIStyle(selectorStyle)
                 .setMaxSelectNum(imageCount)// 最大图片选择数量 int
                 .setMinSelectNum(0)// 最小选择数量 int
                 .setImageSpanCount(4)// 每行显示个数 int
@@ -193,27 +250,9 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
                 .setCameraImageFormat(PictureMimeType.PNG)// 拍照保存图片格式后缀,默认jpeg
                 .setCameraImageFormatForQ(PictureMimeType.PNG_Q)// 拍照保存图片格式后缀,默认jpeg
                 .isPreviewZoomEffect(true)// 图片列表点击 缩放效果 默认true
-//                .sizeMultiplier(0.5f)// glide 加载图片大小 0~1之间 如设置 .glideOverride()无效
-//                .enableCrop(isCrop)// 是否裁剪 true or false
-//                .compress(compress)// 是否压缩 true or false
-//                .glideOverride(160, 160)// int glide 加载宽高，越小图片列表越流畅，但会影响列表图片浏览的清晰度
-//                .withAspectRatio(CropW, CropH)// int 裁剪比例 如16:9 3:2 3:4 1:1 可自定义
-//                .hideBottomControls(isCrop)// 是否显示uCrop工具栏，默认不显示 true or false
                 .isGif(isGif)// 是否显示gif图片 true or false
-//                .freeStyleCropEnabled(freeStyleCropEnabled)// 裁剪框是否可拖拽 true or false
-//                .circleDimmedLayer(showCropCircle)// 是否圆形裁剪 true or false
-//                .showCropFrame(showCropFrame)// 是否显示裁剪矩形边框 圆形裁剪时建议设为false   true or false
-//                .showCropGrid(showCropGrid)// 是否显示裁剪矩形网格 圆形裁剪时建议设为false    true or false
                 .isOpenClickSound(false)// 是否开启点击声音 true or false
-//                .cropCompressQuality(quality)// 裁剪压缩质量 默认90 int
-//                .minimumCompressSize(minimumCompressSize)// 小于100kb的图片不压缩
-//                .synOrAsy(true)//同步true或异步false 压缩 默认同步
-//                .rotateEnabled(rotateEnabled) // 裁剪是否可旋转图片 true or false
-//                .scaleEnabled(scaleEnabled)// 裁剪是否可放大缩小图片 true or false
-//                .selectionMedia(selectList) // 当前已选中的图片 List
-//                .isWeChatStyle(isWeChatStyle)
-//                .theme(showSelectedIndex ? R.style.picture_WeChat_style : 0)
-//                .compressFocusAlpha(compressFocusAlpha)
+                .isFastSlidingSelect(true)//滑动选择
                 .forResult(PictureConfig.CHOOSE_REQUEST); //结果回调onActivityResult code
     }
 
@@ -421,8 +460,9 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
         imageMap.putDouble("width", options.outWidth);
         imageMap.putDouble("height", options.outHeight);
         imageMap.putString("type", "image");
-        imageMap.putString("uri", "file://" + path);
-        imageMap.putString("original_uri", "file://" + media.getPath());
+        imageMap.putString("uri",  "file://" + media.getRealPath());
+        imageMap.putString("path",  "file://" + media.getRealPath());
+        imageMap.putString("original_uri", "file://" + media.getRealPath());
         imageMap.putInt("size", (int) new File(path).length());
 
         if (enableBase64) {
