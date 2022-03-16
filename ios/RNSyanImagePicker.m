@@ -143,6 +143,14 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
     imagePickerVc.autoDismiss = NO;
     imagePickerVc.showSelectedIndex = showSelectedIndex;
     imagePickerVc.modalPresentationStyle = UIModalPresentationFullScreen;
+    imagePickerVc.iconThemeColor = [UIColor colorWithRed:255 / 255.0 green:79 / 255.0 blue:75 / 255.0 alpha:1.0];
+    [imagePickerVc setPhotoPickerPageUIConfigBlock:^(UICollectionView *collectionView, UIView *bottomToolBar, UIButton *previewButton, UIButton *originalPhotoButton, UILabel *originalPhotoLabel, UIButton *doneButton, UIImageView *numberImageView, UILabel *numberLabel, UIView *divideLine) {
+        [doneButton setTitleColor:[UIColor colorWithRed:255 / 255.0 green:79 / 255.0 blue:75 / 255.0 alpha:1.0] forState:UIControlStateNormal];
+    }];
+    
+    [imagePickerVc setPhotoPreviewPageUIConfigBlock:^(UICollectionView *collectionView, UIView *naviBar, UIButton *backButton, UIButton *selectButton, UILabel *indexLabel, UIView *toolBar, UIButton *originalPhotoButton, UILabel *originalPhotoLabel, UIButton *doneButton, UIImageView *numberImageView, UILabel *numberLabel) {
+        [doneButton setTitleColor:[UIColor colorWithRed:255 / 255.0 green:79 / 255.0 blue:75 / 255.0 alpha:1.0] forState:UIControlStateNormal];
+    }];
 
     if (isRecordSelected) {
         imagePickerVc.selectedAssets = self.selectedAssets; // 当前已选中的图片
@@ -232,7 +240,15 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
     imagePickerVc.allowPickingMultipleVideo = isGif ? YES : allowPickingMultipleVideo;
     imagePickerVc.allowCrop = isCrop;   // 裁剪
     imagePickerVc.modalPresentationStyle = UIModalPresentationFullScreen;
-
+    imagePickerVc.iconThemeColor = [UIColor colorWithRed:255 / 255.0 green:79 / 255.0 blue:75 / 255.0 alpha:1.0];
+    [imagePickerVc setPhotoPickerPageUIConfigBlock:^(UICollectionView *collectionView, UIView *bottomToolBar, UIButton *previewButton, UIButton *originalPhotoButton, UILabel *originalPhotoLabel, UIButton *doneButton, UIImageView *numberImageView, UILabel *numberLabel, UIView *divideLine) {
+        [doneButton setTitleColor:[UIColor colorWithRed:255 / 255.0 green:79 / 255.0 blue:75 / 255.0 alpha:1.0] forState:UIControlStateNormal];
+    }];
+    
+    [imagePickerVc setPhotoPreviewPageUIConfigBlock:^(UICollectionView *collectionView, UIView *naviBar, UIButton *backButton, UIButton *selectButton, UILabel *indexLabel, UIView *toolBar, UIButton *originalPhotoButton, UILabel *originalPhotoLabel, UIButton *doneButton, UIImageView *numberImageView, UILabel *numberLabel) {
+        [doneButton setTitleColor:[UIColor colorWithRed:255 / 255.0 green:79 / 255.0 blue:75 / 255.0 alpha:1.0] forState:UIControlStateNormal];
+    }];
+    
     if (isRecordSelected) {
         imagePickerVc.selectedAssets = self.selectedAssets; // 当前已选中的图片
     }
