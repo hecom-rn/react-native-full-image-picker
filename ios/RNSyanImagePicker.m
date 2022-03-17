@@ -127,7 +127,7 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
     NSInteger   quality  = [self.cameraOptions sy_integerForKey:@"quality"];
 
     TZImagePickerController *imagePickerVc = [[TZImagePickerController alloc] initWithMaxImagesCount:imageCount delegate:self];
-
+    imagePickerVc.iconThemeColor = [UIColor colorWithRed:255 / 255.0 green:79 / 255.0 blue:75 / 255.0 alpha:1.0];
     imagePickerVc.maxImagesCount = imageCount;
     imagePickerVc.allowPickingGif = isGif; // 允许GIF
     imagePickerVc.allowTakePicture = isCamera; // 允许用户在内部拍照
@@ -143,7 +143,7 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
     imagePickerVc.autoDismiss = NO;
     imagePickerVc.showSelectedIndex = showSelectedIndex;
     imagePickerVc.modalPresentationStyle = UIModalPresentationFullScreen;
-    imagePickerVc.iconThemeColor = [UIColor colorWithRed:255 / 255.0 green:79 / 255.0 blue:75 / 255.0 alpha:1.0];
+    
     [imagePickerVc setPhotoPickerPageUIConfigBlock:^(UICollectionView *collectionView, UIView *bottomToolBar, UIButton *previewButton, UIButton *originalPhotoButton, UILabel *originalPhotoLabel, UIButton *doneButton, UIImageView *numberImageView, UILabel *numberLabel, UIView *divideLine) {
         [doneButton setTitleColor:[UIColor colorWithRed:255 / 255.0 green:79 / 255.0 blue:75 / 255.0 alpha:1.0] forState:UIControlStateNormal];
     }];
@@ -228,7 +228,7 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
     NSInteger   quality  = [self.cameraOptions sy_integerForKey:@"quality"];
 
     TZImagePickerController *imagePickerVc = [[TZImagePickerController alloc] initWithMaxImagesCount:imageCount delegate:self];
-
+    imagePickerVc.iconThemeColor = [UIColor colorWithRed:255 / 255.0 green:79 / 255.0 blue:75 / 255.0 alpha:1.0];
     imagePickerVc.maxImagesCount = imageCount;
     imagePickerVc.allowPickingGif = isGif; // 允许GIF
     imagePickerVc.allowTakePicture = isCamera; // 允许用户在内部拍照
@@ -240,7 +240,7 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
     imagePickerVc.allowPickingMultipleVideo = isGif ? YES : allowPickingMultipleVideo;
     imagePickerVc.allowCrop = isCrop;   // 裁剪
     imagePickerVc.modalPresentationStyle = UIModalPresentationFullScreen;
-    imagePickerVc.iconThemeColor = [UIColor colorWithRed:255 / 255.0 green:79 / 255.0 blue:75 / 255.0 alpha:1.0];
+    
     [imagePickerVc setPhotoPickerPageUIConfigBlock:^(UICollectionView *collectionView, UIView *bottomToolBar, UIButton *previewButton, UIButton *originalPhotoButton, UILabel *originalPhotoLabel, UIButton *doneButton, UIImageView *numberImageView, UILabel *numberLabel, UIView *divideLine) {
         [doneButton setTitleColor:[UIColor colorWithRed:255 / 255.0 green:79 / 255.0 blue:75 / 255.0 alpha:1.0] forState:UIControlStateNormal];
     }];
