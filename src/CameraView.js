@@ -1,6 +1,6 @@
 import React from 'react';
 import { Alert, Dimensions, Image, Platform, StatusBar, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { RNCamera } from '@hecom/react-native-camera';
+import { RNCamera } from 'react-native-camera';
 import { getSafeAreaInset } from '@hecom/react-native-pure-navigation-bar';
 import Video from 'react-native-video';
 import PageKeys from './PageKeys';

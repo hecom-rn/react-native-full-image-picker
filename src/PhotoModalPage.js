@@ -4,8 +4,6 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { NavigationContainer } from '@react-navigation/native';
 import PageKeys from './PageKeys';
 import CameraView from './CameraView';
-import AlbumListView from './AlbumListView';
-import AlbumView from './AlbumView';
 import PreviewMultiView from './PreviewMultiView';
 
 export default class PhotoModalPage extends React.PureComponent {
@@ -40,8 +38,6 @@ export default class PhotoModalPage extends React.PureComponent {
         };
         const allscenes = {
             [PageKeys.camera]: CameraView,
-            [PageKeys.album_list]: AlbumListView,
-            [PageKeys.album_view]: AlbumView,
             [PageKeys.preview]: PreviewMultiView,
         };
         const defaultProp = {
