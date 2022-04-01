@@ -53,7 +53,7 @@ const defaultOptions = {
  */
 const getCamera = (options) => showPicker(PageKeys.camera, {...options, isVideo: false});
 const getVideo = (options) => showPicker(PageKeys.camera, {...options, isVideo: true});
-const getAlbum = (options) => showImagePicker(PageKeys.album_list, options);
+const getAlbum = (options) => showImagePicker(options, callback);
 let sibling = null;
 
 function showPicker(initialRouteName, options) {
@@ -72,33 +72,35 @@ function showPicker(initialRouteName, options) {
     );
 }
 
-export default {
-    /**
-     * 以Callback形式调用
-     * 1、相册参数暂时只支持默认参数中罗列的属性；
-     * 2、回调形式：showImagePicker(options, (err, selectedPhotos) => {})
-     *  1）选择图片成功，err为null，selectedPhotos为选中的图片数组
-     *  2）取消时，err返回"取消"，selectedPhotos将为undefined
-     *  按需判断各参数值，确保调用正常，示例使用方式：
-     *      showImagePicker(options, (err, selectedPhotos) => {
-     *          if (err) {
-     *              // 取消选择
-     *              return;
-     *          }
-     *          // 选择成功
-     *      })
-     *
-     * @param {Object} options 相册参数
-     * @param {Function} callback 成功，或失败回调
-     */
-    showImagePicker(options, callback) {
-        const optionObj = {
-            ...defaultOptions,
-            ...options
-        };
-        RNSyanImagePicker.showImagePicker(optionObj, callback)
-    },
+/**
+ * 以Callback形式调用
+ * 1、相册参数暂时只支持默认参数中罗列的属性；
+ * 2、回调形式：showImagePicker(options, (err, selectedPhotos) => {})
+ *  1）选择图片成功，err为null，selectedPhotos为选中的图片数组
+ *  2）取消时，err返回"取消"，selectedPhotos将为undefined
+ *  按需判断各参数值，确保调用正常，示例使用方式：
+ *      showImagePicker(options, (err, selectedPhotos) => {
+ *          if (err) {
+ *              // 取消选择
+ *              return;
+ *          }
+ *          // 选择成功
+ *      })
+ *
+ * @param {Object} options 相册参数
+ * @param {Function} callback 成功，或失败回调
+ */
+function showImagePicker(options, callback) {
+    const optionObj = {
+        ...defaultOptions,
+        ...options
+    };
+    RNSyanImagePicker.showImagePicker(optionObj, callback)
+}
 
+export default {
+
+    showImagePicker,
     /**
      * 以Promise形式调用
      * 1、相册参数暂时只支持默认参数中罗列的属性；
