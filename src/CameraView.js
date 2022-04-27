@@ -4,6 +4,8 @@ import { RNCamera } from 'react-native-camera';
 import { getSafeAreaInset } from '@hecom/react-native-pure-navigation-bar';
 import Video from 'react-native-video';
 import PageKeys from './PageKeys';
+import * as Sentry from '@sentry/react-native';
+import Toast from 'react-native-root-toast';
 
 export default class extends React.PureComponent {
     static defaultProps = {
@@ -236,7 +238,14 @@ export default class extends React.PureComponent {
                     });
                 }
             } catch (err) {
-                console.log(err);
+                Sentry.captureMessage('相机拍照异常', {
+                    extra: {
+                        message: err
+                    },
+                });
+                Toast.show(err.message || '相机拍照异常');
+                
+                this.takePictureing = false;
                 this.camera.pausePreview();
                 this.camera.resumePreview();
             }
