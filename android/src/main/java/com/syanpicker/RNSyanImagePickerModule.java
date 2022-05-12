@@ -446,6 +446,8 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
     private WritableMap getImageResult(LocalMedia media, Boolean enableBase64) {
         WritableMap imageMap = new WritableNativeMap();
         String path = media.getPath();
+        int width = media.getWidth();
+        int height = media.getHeight();
 
         if (media.isCompressed() || media.isCut()) {
             path = media.getCompressPath();
@@ -454,11 +456,13 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
         if (media.isCut()) {
             path = media.getCutPath();
         }
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(path, options);
-        imageMap.putDouble("width", options.outWidth);
-        imageMap.putDouble("height", options.outHeight);
+        if(width<=0 && height<=0){
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(media.getRealPath(), options);
+        }
+        imageMap.putDouble("width", width);
+        imageMap.putDouble("height", height);
         imageMap.putString("type", "image");
         imageMap.putString("uri",  "file://" + media.getRealPath());
         imageMap.putString("path",  "file://" + media.getRealPath());
