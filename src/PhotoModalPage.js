@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, BackHandler } from 'react-native';
+import { Modal, BackHandler, InteractionManager, Platform } from 'react-native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { NavigationContainer } from '@react-navigation/native';
 import PageKeys from './PageKeys';
@@ -29,22 +29,25 @@ export default class PhotoModalPage extends React.PureComponent {
         BackHandler.removeEventListener('hardwareBackPress', this._clickBack);
     }
 
-    onBack = (data) => {
-        this.props.callback && this.props.callback(data);
-        this.props.onDestroy && this.props.onDestroy();
-    }
-
     render() {
+        const callback = (data) => {
+            this.props.callback && this.props.callback(data);
+            this.props.onDestroy && this.props.onDestroy();
+         
+        };
         const allscenes = {
             [PageKeys.camera]: CameraView,
             [PageKeys.preview]: PreviewMultiView,
         };
+        const defaultProp = {
+            ...this.props,
+            callback: callback,
+        }
         const withUnwrap = (WrappedComponent) => class extends React.PureComponent {
             render() {
                 return (
                     <WrappedComponent
-                        {...this.props}
-                        callback={this.onBack}
+                        {...defaultProp}
                         {...this.props.route.params}
                         navigation={this.props.navigation}
                     />
