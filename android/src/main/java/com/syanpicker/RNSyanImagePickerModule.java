@@ -235,25 +235,31 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
         Boolean isAndroidQ = SdkVersionUtils.isQ();
 
         Activity currentActivity = getCurrentActivity();
-        PictureSelector.create(currentActivity)
-                .openGallery(SelectMimeType.ofImage())//全部.PictureMimeType.ofAll()、图片.ofImage()、视频.ofVideo()、音频.ofAudio()
-                .setImageEngine(GlideEngine.createGlideEngine())
-                .setSelectorUIStyle(selectorStyle)
-                .setMaxSelectNum(imageCount)// 最大图片选择数量 int
-                .setMinSelectNum(0)// 最小选择数量 int
-                .setImageSpanCount(4)// 每行显示个数 int
-                .setSelectionMode(modeValue)// 多选 or 单选 PictureConfig.MULTIPLE or PictureConfig.SINGLE
-                .isPreviewImage(true)// 是否可预览图片 true or false
-                .isPreviewVideo(false)// 是否可预览视频 true or false
-                .isPreviewAudio(false) // 是否可播放音频 true or false
-                .isDisplayCamera(isCamera)// 是否显示拍照按钮 true or false
-                .setCameraImageFormat(PictureMimeType.PNG)// 拍照保存图片格式后缀,默认jpeg
-                .setCameraImageFormatForQ(PictureMimeType.PNG_Q)// 拍照保存图片格式后缀,默认jpeg
-                .isPreviewZoomEffect(true)// 图片列表点击 缩放效果 默认true
-                .isGif(isGif)// 是否显示gif图片 true or false
-                .isOpenClickSound(false)// 是否开启点击声音 true or false
-                .isFastSlidingSelect(true)//滑动选择
-                .forResult(PictureConfig.CHOOSE_REQUEST); //结果回调onActivityResult code
+
+        currentActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                PictureSelector.create(currentActivity)
+                        .openGallery(SelectMimeType.ofImage())//全部.PictureMimeType.ofAll()、图片.ofImage()、视频.ofVideo()、音频.ofAudio()
+                        .setImageEngine(GlideEngine.createGlideEngine())
+                        .setSelectorUIStyle(selectorStyle)
+                        .setMaxSelectNum(imageCount)// 最大图片选择数量 int
+                        .setMinSelectNum(0)// 最小选择数量 int
+                        .setImageSpanCount(4)// 每行显示个数 int
+                        .setSelectionMode(modeValue)// 多选 or 单选 PictureConfig.MULTIPLE or PictureConfig.SINGLE
+                        .isPreviewImage(true)// 是否可预览图片 true or false
+                        .isPreviewVideo(false)// 是否可预览视频 true or false
+                        .isPreviewAudio(false) // 是否可播放音频 true or false
+                        .isDisplayCamera(isCamera)// 是否显示拍照按钮 true or false
+                        .setCameraImageFormat(PictureMimeType.PNG)// 拍照保存图片格式后缀,默认jpeg
+                        .setCameraImageFormatForQ(PictureMimeType.PNG_Q)// 拍照保存图片格式后缀,默认jpeg
+                        .isPreviewZoomEffect(true)// 图片列表点击 缩放效果 默认true
+                        .isGif(isGif)// 是否显示gif图片 true or false
+                        .isOpenClickSound(false)// 是否开启点击声音 true or false
+                        .isFastSlidingSelect(true)//滑动选择
+                        .forResult(PictureConfig.CHOOSE_REQUEST); //结果回调onActivityResult code
+            }
+        });
     }
 
     /**
@@ -456,7 +462,7 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
         if (media.isCut()) {
             path = media.getCutPath();
         }
-        if(width<=0 && height<=0){
+        if (width <= 0 && height <= 0) {
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inJustDecodeBounds = true;
             BitmapFactory.decodeFile(media.getRealPath(), options);
@@ -464,8 +470,8 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
         imageMap.putDouble("width", width);
         imageMap.putDouble("height", height);
         imageMap.putString("type", "image");
-        imageMap.putString("uri",  "file://" + media.getRealPath());
-        imageMap.putString("path",  "file://" + media.getRealPath());
+        imageMap.putString("uri", "file://" + media.getRealPath());
+        imageMap.putString("path", "file://" + media.getRealPath());
         imageMap.putString("original_uri", "file://" + media.getRealPath());
         imageMap.putInt("size", (int) new File(path).length());
 
@@ -504,8 +510,8 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
             e.printStackTrace();
         }
         bytes = output.toByteArray();
-        if(absoluteFilePath.toLowerCase().endsWith("png")){
-          return "data:image/png;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP);
+        if (absoluteFilePath.toLowerCase().endsWith("png")) {
+            return "data:image/png;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP);
         }
         return "data:image/jpeg;base64," + Base64.encodeToString(bytes, Base64.NO_WRAP);
     }
@@ -513,6 +519,7 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
 
     /**
      * 获取视频封面图片
+     *
      * @param videoPath 视频地址
      */
     private String getVideoCover(String videoPath) {
