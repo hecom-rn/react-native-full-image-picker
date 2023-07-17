@@ -40,6 +40,8 @@ const defaultOptions = {
     isWeChatStyle: false,      // 是否是微信风格选择界面 Android Only
     sortAscendingByModificationDate: true, // 对照片排序，按修改时间升序，默认是YES。如果设置为NO,最新的照片会显示在最前面，内部的拍照按钮会排在第一个
     showSelectedIndex: false, // 是否显示序号， 默认不显示
+    allowPickingVideo: false, // 相册是否可以选择视频
+    allowTakeVideo: false, // 是否允许拍视频
 };
 
 /**

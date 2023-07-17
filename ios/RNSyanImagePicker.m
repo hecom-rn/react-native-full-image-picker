@@ -220,6 +220,8 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
     BOOL isRecordSelected = [self.cameraOptions sy_boolForKey:@"isRecordSelected"];
     BOOL allowPickingOriginalPhoto = [self.cameraOptions sy_boolForKey:@"allowPickingOriginalPhoto"];
     BOOL allowPickingMultipleVideo = [self.cameraOptions sy_boolForKey:@"allowPickingMultipleVideo"];
+    BOOL allowPickingVideo = [self.cameraOptions sy_boolForKey:@"allowPickingVideo"];
+    BOOL allowTakeVideo = [self.cameraOptions sy_boolForKey:@"allowTakeVideo"];
     BOOL sortAscendingByModificationDate = [self.cameraOptions sy_boolForKey:@"sortAscendingByModificationDate"];
     BOOL showSelectedIndex = [self.cameraOptions sy_boolForKey:@"showSelectedIndex"];
     NSInteger CropW      = [self.cameraOptions sy_integerForKey:@"CropW"];
@@ -232,7 +234,8 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
     imagePickerVc.maxImagesCount = imageCount;
     imagePickerVc.allowPickingGif = isGif; // 允许GIF
     imagePickerVc.allowTakePicture = isCamera; // 允许用户在内部拍照
-    imagePickerVc.allowPickingVideo = NO; // 不允许视频
+    imagePickerVc.allowPickingVideo = allowPickingVideo; // 不允许视频
+    imagePickerVc.allowTakeVideo = allowTakeVideo; // 允许拍摄视频
     imagePickerVc.showSelectedIndex = showSelectedIndex;
     imagePickerVc.allowPickingOriginalPhoto = allowPickingOriginalPhoto; // 允许原图
     imagePickerVc.sortAscendingByModificationDate = sortAscendingByModificationDate;

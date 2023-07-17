@@ -224,6 +224,7 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
         boolean isWeChatStyle = this.cameraOptions.getBoolean("isWeChatStyle");
         boolean showSelectedIndex = this.cameraOptions.getBoolean("showSelectedIndex");
         boolean compressFocusAlpha = this.cameraOptions.getBoolean("compressFocusAlpha");
+        boolean allowPickingVideo = this.cameraOptions.getBoolean("allowPickingVideo");
 
         int modeValue;
         if (imageCount == 1) {
@@ -240,7 +241,7 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
             @Override
             public void run() {
                 PictureSelector.create(currentActivity)
-                        .openGallery(SelectMimeType.ofImage())//全部.PictureMimeType.ofAll()、图片.ofImage()、视频.ofVideo()、音频.ofAudio()
+                        .openGallery(allowPickingVideo ? SelectMimeType.ofAll() : SelectMimeType.ofImage())//全部.PictureMimeType.ofAll()、图片.ofImage()、视频.ofVideo()、音频.ofAudio()
                         .setImageEngine(GlideEngine.createGlideEngine())
                         .setSelectorUIStyle(selectorStyle)
                         .setMaxSelectNum(imageCount)// 最大图片选择数量 int
