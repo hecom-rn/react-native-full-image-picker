@@ -103,31 +103,32 @@ export default class extends React.PureComponent {
     };
 
     _renderPreviewView = () => {
+        if (this.props.previewView  ) {
+            return this.props.previewView(this.state.data[0].uri); 
+        }
         const { width, height } = Dimensions.get('window');
-        const safeArea = getSafeAreaInset();
         const style = {
             flex: 1,
-            marginTop: safeArea.top + topHeight,
-            marginLeft: safeArea.left,
-            marginRight: safeArea.right,
-            marginBottom: safeArea.bottom + bottomHeight,
+            marginTop: topHeight,
+            marginBottom:  bottomHeight,
             backgroundColor: 'black',
         };
         return (
-            <View style={{ width, height }}>
+            <View style={{ width, height}}>
                 {this.props.isVideo ? (
                     <Video
                         source={{ uri: this.state.data[0].uri }}
                         ref={(ref) => this.player = ref}
-                        style={style}
+                        style={{ width, height : height - bottomHeight - topHeight}}
                     />
                 ) : (
                         <Image
-                            resizeMode='contain'
-                            style={style}
+                            resizeMode='cover'
+                            style={{ width, height : height - bottomHeight - topHeight}}
                             source={{ uri: this.state.data[0].uri }}
                         />
-                    )}
+                )}
+                {this.props.layerView && this.props.layerView()}
             </View>
         );
     };
