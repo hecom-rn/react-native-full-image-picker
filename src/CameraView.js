@@ -2,6 +2,10 @@ import React from 'react';
 import { Alert, Dimensions, Image, Platform, StatusBar, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { RNCamera } from 'react-native-camera';
 import { getSafeAreaInset } from '@hecom/react-native-pure-navigation-bar';
+import ImageResizer from 'react-native-image-resizer';
+import ImageMarker, { Position } from 'react-native-image-marker';
+import Orientation from 'react-native-orientation-locker';
+import ViewShot from 'react-native-view-shot';
 import Video from 'react-native-video';
 import PageKeys from './PageKeys';
 import * as Sentry from '@sentry/react-native';
@@ -14,7 +18,7 @@ export default class extends React.PureComponent {
         flashMode: 0,
         videoQuality: RNCamera.Constants.VideoQuality["480p"],
         pictureOptions: {},
-        recordingOptions: {}
+        recordingOptions: {},
     };
 
     constructor(props) {
@@ -32,14 +36,20 @@ export default class extends React.PureComponent {
             isRecording: false,
         };
         this.takePictureing = false;
+        const ratio = 4 / 3;
+        const { width, height } = Dimensions.get('window');
+        const { top, bottom } = getSafeAreaInset();
+        let otherH = this.props.isVideo ? bottomHeight : height - top - bottom - ratio * width;
+        this.bottomH =  otherH > bottomHeight ? otherH * 0.75 > bottomHeight ? otherH * 0.75 : otherH : otherH;
+        this.topH = otherH - this.bottomH;
     }
 
     componentDidMount() {
-        this.changeEmitter = Dimensions.addEventListener('change', this._onWindowChanged);
+        Orientation.lockToPortrait();
     }
 
     componentWillUnmount() {
-        this.changeEmitter?.remove();
+        Orientation.unlockAllOrientations();
     }
 
     render() {
@@ -56,7 +66,7 @@ export default class extends React.PureComponent {
     _renderTopView = () => {
         const safeArea = getSafeAreaInset();
         const style = {
-            top: safeArea.top,
+            top: topHeight > this.topH ? this.topH + safeArea.top : safeArea.top,
             left: safeArea.left,
             right: safeArea.right,
         };
@@ -90,41 +100,41 @@ export default class extends React.PureComponent {
 
     _renderCameraView = () => {
         return (
-            <RNCamera
-                ref={cam => this.camera = cam}
-                type={this.state.sideType}
-                defaultVideoQuality={this.props.videoQuality}
-                flashMode={this.flashModes[this.state.flashMode]}
-                style={styles.camera}
-                captureAudio={this.props.isVideo}
-                fixOrientation={true}
-            />
+            <View style={{ flex: 1 }}>
+                <View style={{ height: this.topH }} />
+                <RNCamera
+                    ref={cam => this.camera = cam}
+                    type={this.state.sideType}
+                    defaultVideoQuality={this.props.videoQuality}
+                    flashMode={this.flashModes[this.state.flashMode]}
+                    style={styles.camera}
+                    captureAudio={this.props.isVideo}
+                    fixOrientation={true}
+                >
+                    {this.props.waterView && (
+                        <ViewShot ref={ref => this.viewShot = ref} style={{ flex: 1 }}>
+                            {this.props.waterView?.()}
+                        </ViewShot>
+                    )}
+                </RNCamera>
+                <View style={{ height: this.bottomH }} />
+            </View>
         );
     };
 
     _renderPreviewView = () => {
-        if (this.props.previewView  ) {
-            return this.props.previewView(this.state.data[0].uri); 
-        }
-        const { width, height } = Dimensions.get('window');
-        const style = {
-            flex: 1,
-            marginTop: topHeight,
-            marginBottom:  bottomHeight,
-            backgroundColor: 'black',
-        };
         return (
-            <View style={{ width, height}}>
+            <View style={{flex: 1, justifyContent: 'center', marginTop: this.topH, marginBottom: this.bottomH}}>
                 {this.props.isVideo ? (
                     <Video
                         source={{ uri: this.state.data[0].uri }}
                         ref={(ref) => this.player = ref}
-                        style={{ width, height : height - bottomHeight - topHeight}}
+                        style={{flex: 1}}
                     />
                 ) : (
                         <Image
-                            resizeMode='cover'
-                            style={{ width, height : height - bottomHeight - topHeight}}
+                            resizeMode='contain'
+                            style={{flex: 1}}
                             source={{ uri: this.state.data[0].uri }}
                         />
                 )}
@@ -139,6 +149,7 @@ export default class extends React.PureComponent {
             bottom: safeArea.bottom,
             left: safeArea.left,
             right: safeArea.right,
+            height: this.bottomH
         };
         const isMulti = this.props.maxSize > 1;
         const hasPhoto = this.state.data.length > 0;
@@ -183,7 +194,7 @@ export default class extends React.PureComponent {
 
     _renderTakePhotoButton = () => {
         const safeArea = getSafeAreaInset();
-        const left = (Dimensions.get('window').width - safeArea.left - safeArea.right - 84) / 2;
+        const left = (Dimensions.get('window').width - safeArea.left - safeArea.right - bottomHeight) / 2;
         const icon = this.state.isRecording ?
             require('./images/video_recording.png') :
             require('./images/shutter.png');
@@ -207,12 +218,18 @@ export default class extends React.PureComponent {
         });
     };
 
+    _getImageSize = (path) => {
+        return new Promise((resolve, reject) => {
+            Image.getSize(path, (width, height) => resolve({ width, height }), () => reject());
+        });
+    }
+
     _clickTakePicture = async () => {
         if(this.takePictureing) return;
         if (this.camera) {
             try {
                 this.takePictureing = true;
-                const item = await this.camera.takePictureAsync({
+                let item = await this.camera.takePictureAsync({
                     mirrorImage: this.state.sideType === RNCamera.Constants.Type.front,
                     fixOrientation: true,
                     forceUpOrientation: true,
@@ -223,6 +240,26 @@ export default class extends React.PureComponent {
                     if (item.uri.startsWith('file://')) {
                         item.uri = item.uri.substring(7);
                     }
+                }
+                if (this.viewShot) {
+                    const watermarkImage = await this.viewShot.capture();
+                    const { width, height } = await this._getImageSize(watermarkImage);
+                    const resizedImage = await ImageResizer.createResizedImage(
+                        item.uri,
+                        width,
+                        height,
+                        'PNG',
+                        100,
+                    )
+                    const url = await ImageMarker.markImage({
+                        src: {uri: resizedImage.uri},
+                        markerSrc: { uri: watermarkImage },
+                        position: Position.center,
+                        scale: 1,
+                        quality: 100,
+                        markerScale: 1,
+                    })
+                    item = { ...item, uri: url, width, height };
                 }
                 if (this.props.maxSize > 1) {
                     if (this.state.data.length >= this.props.maxSize) {
@@ -314,10 +351,6 @@ export default class extends React.PureComponent {
             this._onFinish([]);
         }
     };
-
-    _onWindowChanged = () => {
-        this.forceUpdate();
-    };
 }
 
 const topHeight = 60;
@@ -346,11 +379,10 @@ const styles = StyleSheet.create({
     camera: {
         flex: 1,
         justifyContent: 'flex-end',
-        alignItems: 'center'
     },
     bottom: {
         position: 'absolute',
-        height: 84,
+        height: bottomHeight,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -358,8 +390,6 @@ const styles = StyleSheet.create({
     },
     takeView: {
         position: 'absolute',
-        top: 0,
-        bottom: 0,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -385,7 +415,7 @@ const styles = StyleSheet.create({
     previewView: {
         flexDirection: 'row',
         alignItems: 'center',
-        height: 84,
+        height: bottomHeight,
     },
     previewImage: {
         width: 50,
