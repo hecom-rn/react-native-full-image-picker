@@ -245,6 +245,8 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
                         .setImageEngine(GlideEngine.createGlideEngine())
                         .setSelectorUIStyle(selectorStyle)
                         .setMaxSelectNum(imageCount)// 最大图片选择数量 int
+                        .setMaxVideoSelectNum(allowPickingVideo ? imageCount : 1)
+                        .isWithSelectVideoImage(allowPickingVideo)
                         .setMinSelectNum(0)// 最小选择数量 int
                         .setImageSpanCount(4)// 每行显示个数 int
                         .setSelectionMode(modeValue)// 多选 or 单选 PictureConfig.MULTIPLE or PictureConfig.SINGLE
