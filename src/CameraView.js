@@ -235,7 +235,6 @@ export default class extends React.PureComponent {
                     forceUpOrientation: true,
                     ...this.props.pictureOptions
                 });
-                this.takePictureing = false;
                 if (Platform.OS === 'ios') {
                     if (item.uri.startsWith('file://')) {
                         item.uri = item.uri.substring(7);
@@ -259,8 +258,14 @@ export default class extends React.PureComponent {
                         quality: 100,
                         markerScale: 1,
                     })
-                    item = { ...item, uri: url, width, height };
+                    item = {
+                        ...item,
+                        uri: (Platform.OS === "android" ? "file://" : "") + url,
+                        width,
+                        height,
+                    };
                 }
+                this.takePictureing = false;
                 if (this.props.maxSize > 1) {
                     if (this.state.data.length >= this.props.maxSize) {
                         Alert.alert('', this.props.maxSizeTakeAlert(this.props.maxSize));
