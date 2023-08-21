@@ -112,7 +112,7 @@ export default class extends React.PureComponent {
                     fixOrientation={true}
                 >
                     {this.props.waterView && (
-                        <ViewShot ref={ref => this.viewShot = ref} style={{ flex: 1 }}>
+                        <ViewShot ref={ref => this.viewShot = ref} style={{ flex: 1, backgroundColor: 'transparent', marginBottom: -2 }}>
                             {this.props.waterView?.()}
                         </ViewShot>
                     )}
