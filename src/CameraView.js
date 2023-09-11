@@ -233,6 +233,7 @@ export default class extends React.PureComponent {
                     mirrorImage: this.state.sideType === RNCamera.Constants.Type.front,
                     fixOrientation: true,
                     forceUpOrientation: true,
+                    orientation: 1,
                     ...this.props.pictureOptions
                 });
                 if (Platform.OS === 'ios') {
