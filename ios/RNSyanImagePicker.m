@@ -431,6 +431,7 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
                 @"fileName": [asset valueForKey:@"filename"],
                 @"type": @"video",
                 @"fileType": @"mp4",
+                @"identifier": @(idx),
                 @"mime":@"video/mp4",
                 @"favorite": @(asset.favorite),
                 @"mediaType": @(asset.mediaType)
@@ -443,7 +444,7 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
             }
             [[TZImageManager manager] getVideoOutputPathWithAsset:asset presetName:AVAssetExportPresetHighestQuality success:^(NSString *outputPath) {
                 NSMutableDictionary *dic = [self handleVideoData:outputPath asset:asset coverImage:photos[idx] quality:quality];
-                dic[@"index"] = @(idx);
+                dic[@"identifier"] = @(idx);
                 [self sendEventWithName:@"RNSyanImagePickerVideo" body:dic];
             } failure:^(NSString *errorMessage, NSError *error) {
                 [self sendEventWithName:@"RNSyanImagePickerVideo" body:@{@"error": errorMessage, @"index": @(idx)}];

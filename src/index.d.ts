@@ -42,7 +42,7 @@ export interface ImagePickerOption {
   // iOS only
   export interface previewVideo {
     coverUri: string; // 预览图url
-    index: number; // 所在数组的index
+    identifier: number; // 所在数组的index， 可与通知数据中identifier匹配
     fileName: string;
     fileType: string; // 固定为mp4
     mime: string; // "video/mp4"
