@@ -6,7 +6,8 @@
 #endif
 #import <UIKit/UIKit.h>
 #import "TZImagePickerController.h"
-@interface RNSyanImagePicker : NSObject <RCTBridgeModule, TZImagePickerControllerDelegate, UINavigationControllerDelegate, UIImagePickerControllerDelegate, UIActionSheetDelegate>
+#import <React/RCTEventEmitter.h>
+@interface RNSyanImagePicker : RCTEventEmitter <RCTBridgeModule, TZImagePickerControllerDelegate, UINavigationControllerDelegate, UIImagePickerControllerDelegate, UIActionSheetDelegate>
 
 @end
 

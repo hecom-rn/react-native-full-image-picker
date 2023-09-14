@@ -36,7 +36,19 @@ export interface ImagePickerOption {
     original_uri:string,	//图片原始路径，仅 Android
     type: string,	//文件类型，仅 Android，当前只返回 image
     size:number, 	 //图片大小，单位为字节 b
-    base64:string	//图片的 base64 编码，如果 enableBase64 设置 false，则不返回该属性
+    base64: string	//图片的 base64 编码，如果 enableBase64 设置 false，则不返回该属性
+  }
+
+  // iOS only
+  export interface previewVideo {
+    coverUri: string; // 预览图url
+    index: number; // 所在数组的index
+    fileName: string;
+    fileType: string; // 固定为mp4
+    mime: string; // "video/mp4"
+    type: string; // "video"
+    favorite: string;
+    mediaType: string;
   }
 
   /**
@@ -57,7 +69,7 @@ export interface ImagePickerOption {
    * @param {Object} options 相册参数
    * @param {Function} callback 成功，或失败回调
    */
-  export function showImagePicker (options:Partial<ImagePickerOption>,callback:(err:null|string,photos:Array<SelectedPhoto>)=>void): void;
+  export function showImagePicker (options:Partial<ImagePickerOption>,callback:(err:null|string,photos:Array<SelectedPhoto | previewVideo>)=>void): void;
 
 
   /**

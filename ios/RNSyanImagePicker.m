@@ -281,12 +281,10 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
         if (imageCount == 1 && isCrop) {
             [self invokeSuccessWithResult:@[[self handleCropImage:photos[0] phAsset:assets[0] quality:quality]]];
         } else {
-            [infos enumerateObjectsUsingBlock:^(NSDictionary * _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
-                [self handleAssets:assets photos:photos quality:quality isSelectOriginalPhoto:isSelectOriginalPhoto completion:^(NSArray *selecteds) {
-                    [self invokeSuccessWithResult:selecteds];
-                } fail:^(NSError *error) {
+            [self handleAssets:assets photos:photos quality:quality isSelectOriginalPhoto:isSelectOriginalPhoto completion:^(NSArray *selecteds) {
+                [self invokeSuccessWithResult:selecteds];
+            } fail:^(NSError *error) {
 
-                }];
             }];
         }
         [weakPicker hideProgressHUD];
@@ -427,16 +425,28 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
 
     [assets enumerateObjectsUsingBlock:^(PHAsset * _Nonnull asset, NSUInteger idx, BOOL * _Nonnull stop) {
         if (asset.mediaType == PHAssetMediaTypeVideo) {
+            [selectedPhotos addObject: @{
+                @"coverUri": [self handleCropImage:photos[idx] phAsset:asset quality:quality][@"uri"],
+                @"index": @(idx),
+                @"fileName": [asset valueForKey:@"filename"],
+                @"type": @"video",
+                @"fileType": @"mp4",
+                @"mime":@"video/mp4",
+                @"favorite": @(asset.favorite),
+                @"mediaType": @(asset.mediaType)
+            }];
+            if ([selectedPhotos count] == [assets count]) {
+                completion(selectedPhotos);
+            }
+            if (idx + 1 == [assets count] && [selectedPhotos count] != [assets count]) {
+                fail(nil);
+            }
             [[TZImageManager manager] getVideoOutputPathWithAsset:asset presetName:AVAssetExportPresetHighestQuality success:^(NSString *outputPath) {
-                [selectedPhotos addObject:[self handleVideoData:outputPath asset:asset coverImage:photos[idx] quality:quality]];
-                if ([selectedPhotos count] == [assets count]) {
-                    completion(selectedPhotos);
-                }
-                if (idx + 1 == [assets count] && [selectedPhotos count] != [assets count]) {
-                    fail(nil);
-                }
+                NSMutableDictionary *dic = [self handleVideoData:outputPath asset:asset coverImage:photos[idx] quality:quality];
+                dic[@"index"] = @(idx);
+                [self sendEventWithName:@"RNSyanImagePickerVideo" body:dic];
             } failure:^(NSString *errorMessage, NSError *error) {
-
+                [self sendEventWithName:@"RNSyanImagePickerVideo" body:@{@"error": errorMessage, @"index": @(idx)}];
             }];
         } else {
             BOOL isGIF = [[TZImageManager manager] getAssetType:asset] == TZAssetModelMediaTypePhotoGif;
@@ -461,6 +471,13 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
         }
     }];
 }
+
+// 注册事件名称
+- (NSArray<NSString *> *)supportedEvents
+{
+  return @[@"RNSyanImagePickerVideo"];
+}
+
 
 /// 处理裁剪图片数据
 - (NSDictionary *)handleCropImage:(UIImage *)image phAsset:(PHAsset *)phAsset quality:(CGFloat)quality {
@@ -546,7 +563,7 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
 }
 
 /// 处理视频数据
-- (NSDictionary *)handleVideoData:(NSString *)outputPath asset:(PHAsset *)asset coverImage:(UIImage *)coverImage quality:(CGFloat)quality {
+- (NSMutableDictionary *)handleVideoData:(NSString *)outputPath asset:(PHAsset *)asset coverImage:(UIImage *)coverImage quality:(CGFloat)quality {
     NSMutableDictionary *video = [NSMutableDictionary dictionary];
     video[@"uri"] = outputPath;
     video[@"fileName"] = [asset valueForKey:@"filename"];
