@@ -425,13 +425,15 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
 
     [assets enumerateObjectsUsingBlock:^(PHAsset * _Nonnull asset, NSUInteger idx, BOOL * _Nonnull stop) {
         if (asset.mediaType == PHAssetMediaTypeVideo) {
+            long long interval = [[NSDate date] timeIntervalSince1970];
+            NSString *identifier = [NSString stringWithFormat:@"identifier_%lld_%lu", interval , (unsigned long)idx];
             [selectedPhotos addObject: @{
                 @"coverUri": [self handleCropImage:photos[idx] phAsset:asset quality:quality][@"uri"],
                 @"index": @(idx),
                 @"fileName": [asset valueForKey:@"filename"],
                 @"type": @"video",
                 @"fileType": @"mp4",
-                @"identifier": @(idx),
+                @"identifier": identifier,
                 @"mime":@"video/mp4",
                 @"favorite": @(asset.favorite),
                 @"mediaType": @(asset.mediaType)
@@ -444,10 +446,10 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
             }
             [[TZImageManager manager] getVideoOutputPathWithAsset:asset presetName:AVAssetExportPresetHighestQuality success:^(NSString *outputPath) {
                 NSMutableDictionary *dic = [self handleVideoData:outputPath asset:asset coverImage:photos[idx] quality:quality];
-                dic[@"identifier"] = @(idx);
+                dic[@"identifier"] = identifier;
                 [self sendEventWithName:@"RNSyanImagePickerVideo" body:dic];
             } failure:^(NSString *errorMessage, NSError *error) {
-                [self sendEventWithName:@"RNSyanImagePickerVideo" body:@{@"error": errorMessage, @"index": @(idx)}];
+                [self sendEventWithName:@"RNSyanImagePickerVideo" body:@{@"error": errorMessage, @"identifier": identifier}];
             }];
         } else {
             BOOL isGIF = [[TZImageManager manager] getAssetType:asset] == TZAssetModelMediaTypePhotoGif;
