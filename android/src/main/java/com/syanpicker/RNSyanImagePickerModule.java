@@ -243,6 +243,9 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
                 PictureSelector.create(currentActivity)
                         .openGallery(allowPickingVideo ? SelectMimeType.ofAll() : SelectMimeType.ofImage())//全部.PictureMimeType.ofAll()、图片.ofImage()、视频.ofVideo()、音频.ofAudio()
                         .setImageEngine(GlideEngine.createGlideEngine())
+                        .setCompressEngine( new ImageCompressEngine())
+                        .setSandboxFileEngine(new MeSandboxFileEngine())
+                        .isOriginalControl(true)
                         .setSelectorUIStyle(selectorStyle)
                         .setMaxSelectNum(imageCount)// 最大图片选择数量 int
                         .setMaxVideoSelectNum(allowPickingVideo ? imageCount : 1)
@@ -454,28 +457,25 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
 
     private WritableMap getImageResult(LocalMedia media, Boolean enableBase64) {
         WritableMap imageMap = new WritableNativeMap();
-        String path = media.getPath();
+        String originalPath = media.getOriginalPath();
+        String compressPath = media.getCompressPath();
         int width = media.getWidth();
         int height = media.getHeight();
+        compressPath = media.getCompressPath();
+        String path = TextUtils.isEmpty(originalPath)?compressPath:originalPath;
 
-        if (media.isCompressed() || media.isCut()) {
-            path = media.getCompressPath();
-        }
-
-        if (media.isCut()) {
-            path = media.getCutPath();
-        }
-        if (width <= 0 && height <= 0) {
-            BitmapFactory.Options options = new BitmapFactory.Options();
-            options.inJustDecodeBounds = true;
-            BitmapFactory.decodeFile(media.getRealPath(), options);
-        }
+//        if (width <= 0 && height <= 0) {
+//            BitmapFactory.Options options = new BitmapFactory.Options();
+//            options.inJustDecodeBounds = true;
+//            BitmapFactory.decodeFile(media.getOriginalPath(), options);
+//        }
         imageMap.putDouble("width", width);
         imageMap.putDouble("height", height);
         imageMap.putString("type", "image");
-        imageMap.putString("uri", "file://" + media.getRealPath());
-        imageMap.putString("path", "file://" + media.getRealPath());
-        imageMap.putString("original_uri", "file://" + media.getRealPath());
+        imageMap.putString("uri", "file://" +path);
+        imageMap.putString("path", "file://" +path);
+        imageMap.putString("compressPath", "file://" +compressPath);
+        imageMap.putString("original_uri", "file://" + path);
         imageMap.putInt("size", (int) new File(path).length());
 
         if (enableBase64) {
