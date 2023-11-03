@@ -445,13 +445,18 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
                 selectList = tmpSelectList;
             }
 
-            WritableArray imageList = new WritableNativeArray();
+            WritableArray mediaList = new WritableNativeArray();
             boolean enableBase64 = cameraOptions.getBoolean("enableBase64");
 
             for (LocalMedia media : tmpSelectList) {
-                imageList.pushMap(getImageResult(media, enableBase64));
+                String mimeType = media.getMimeType();
+                if(PictureMimeType.isHasImage(mimeType)){
+                    mediaList.pushMap(getImageResult(media, enableBase64));
+                }else if(PictureMimeType.isHasVideo(mimeType)) {
+                    mediaList.pushMap(getVideoResult(media, enableBase64));
+                }
             }
-            invokeSuccessWithResult(imageList);
+            invokeSuccessWithResult(mediaList);
         }
     }
 
@@ -486,6 +491,27 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
         return imageMap;
     }
 
+    private WritableMap getVideoResult(LocalMedia media, Boolean enableBase64) {
+        WritableMap imageMap = new WritableNativeMap();
+        int width = media.getWidth();
+        int height = media.getHeight();
+        String path =  media.getRealPath();
+
+        imageMap.putDouble("width", width);
+        imageMap.putDouble("height", height);
+        imageMap.putString("type", media.getMimeType());
+        imageMap.putString("uri", "file://" +path);
+        imageMap.putString("path", "file://" +path);
+        imageMap.putString("original_uri", "file://" + path);
+        imageMap.putInt("size", (int) new File(path).length());
+
+        if (enableBase64) {
+            String encodeString = getBase64StringFromFile(path);
+            imageMap.putString("base64", encodeString);
+        }
+
+        return imageMap;
+    }
     /**
      * 获取图片base64编码字符串
      *
