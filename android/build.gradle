@@ -4,13 +4,14 @@ def safeExtGet(prop, fallback) {
     rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
 }
 
-def DEFAULT_COMPILE_SDK_VERSION = 27
-def DEFAULT_TARGET_SDK_VERSION = 27
-def DEFAULT_MIN_SDK_VERSION = 16
-def GLIDE_VERSION = safeExtGet("glideVersion", "4.12.0")
-def PICTURE_VERSION = safeExtGet("pictureVersion", "v3.0.5")
+def DEFAULT_COMPILE_SDK_VERSION = 34
+def DEFAULT_TARGET_SDK_VERSION = 34
+def DEFAULT_MIN_SDK_VERSION = 19
+def GLIDE_VERSION = safeExtGet("glideVersion", "4.15.1")
+def PICTURE_VERSION = safeExtGet("pictureVersion", "v3.11.2")
 buildscript {
     repositories {
+        maven { url "https://maven.aliyun.com/nexus/content/groups/public/" }
         maven {
             url 'https://maven.aliyun.com/nexus/content/repositories/releases'
         }
@@ -31,7 +32,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.0.1'
+        classpath 'com.android.tools.build:gradle:7.4.2'
     }
 }
 
