@@ -4,9 +4,7 @@ package com.syanpicker;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.media.MediaMetadataRetriever;
-import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Base64;
 
@@ -24,7 +22,6 @@ import com.facebook.react.bridge.WritableArray;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.WritableNativeArray;
 import com.facebook.react.bridge.WritableNativeMap;
-import com.luck.picture.lib.basic.PictureSelectionCameraModel;
 import com.luck.picture.lib.basic.PictureSelector;
 import com.luck.picture.lib.config.PictureConfig;
 import com.luck.picture.lib.config.PictureMimeType;
@@ -243,7 +240,7 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
                 PictureSelector.create(currentActivity)
                         .openGallery(allowPickingVideo ? SelectMimeType.ofAll() : SelectMimeType.ofImage())//全部.PictureMimeType.ofAll()、图片.ofImage()、视频.ofVideo()、音频.ofAudio()
                         .setImageEngine(GlideEngine.createGlideEngine())
-                        .setCompressEngine( new ImageCompressEngine())
+                        .setCompressEngine( new ImageFileCompressEngine())
                         .setSandboxFileEngine(new MeSandboxFileEngine())
                         .isOriginalControl(true)
                         .setSelectorUIStyle(selectorStyle)
@@ -387,12 +384,12 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
         public void onActivityResult(Activity activity, int requestCode, int resultCode, final Intent data) {
             if (resultCode == -1) {
                 if (requestCode == PictureConfig.CHOOSE_REQUEST) {
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
+//                     new Thread(new Runnable() {
+//                         @Override
+//                         public void run() {
                             onGetResult(data);
-                        }
-                    }).run();
+//                         }
+//                     }).run();
                 } else if (requestCode == PictureConfig.REQUEST_CAMERA) {
                     onGetVideoResult(data);
                 }
@@ -462,12 +459,13 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
 
     private WritableMap getImageResult(LocalMedia media, Boolean enableBase64) {
         WritableMap imageMap = new WritableNativeMap();
-        String originalPath = media.getOriginalPath();
-        String compressPath = media.getCompressPath();
+//         String originalPath = media.getOriginalPath();
+//         String compressPath = media.getCompressPath();
         int width = media.getWidth();
         int height = media.getHeight();
-        compressPath = media.getCompressPath();
-        String path = TextUtils.isEmpty(originalPath)?compressPath:originalPath;
+//        compressPath = media.getCompressPath();
+//         String path = TextUtils.isEmpty(originalPath)?compressPath:originalPath;
+        String path = media.getAvailablePath();
 
 //        if (width <= 0 && height <= 0) {
 //            BitmapFactory.Options options = new BitmapFactory.Options();
@@ -479,8 +477,8 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
         imageMap.putString("type", "image");
         imageMap.putString("uri", "file://" +path);
         imageMap.putString("path", "file://" +path);
-        imageMap.putString("compressPath", "file://" +compressPath);
-        imageMap.putString("original_uri", "file://" + path);
+//         imageMap.putString("compressPath", "file://" +compressPath);
+//         imageMap.putString("original_uri", "file://" + path);
         imageMap.putInt("size", (int) new File(path).length());
 
         if (enableBase64) {
