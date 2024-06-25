@@ -1,5 +1,6 @@
 import React from 'react';
 import RootSiblings from 'react-native-root-siblings';
+import Navigation from '@hecom/navigation';
 import PageKeys from './PageKeys';
 import PhotoModalPage from './PhotoModalPage';
 
@@ -59,19 +60,26 @@ const getAlbum = (options) => showImagePicker(options, callback);
 let sibling = null;
 
 function showPicker(initialRouteName, options) {
-    if (sibling) {
-        return null;
-    }
-    sibling = new RootSiblings(
-        <PhotoModalPage
-            initialRouteName={initialRouteName}
-            onDestroy={() => {
-                sibling && sibling.destroy();
-                sibling = null;
-            }}
-            {...options}
-        />
-    );
+    global.push(PageKeys.camera, {
+        ...options,
+        callback: (data) => {
+            options.callback && options.callback(data);
+            Navigation.pop();
+        }
+    });
+    // if (sibling) {
+    //     return null;
+    // }
+    // sibling = new RootSiblings(
+    //     <PhotoModalPage
+    //         initialRouteName={initialRouteName}
+    //         onDestroy={() => {
+    //             sibling && sibling.destroy();
+    //             sibling = null;
+    //         }}
+    //         {...options}
+    //     />
+    // );
 }
 
 /**
