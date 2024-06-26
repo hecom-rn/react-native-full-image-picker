@@ -60,7 +60,7 @@ const getAlbum = (options) => showImagePicker(options, callback);
 let sibling = null;
 
 function showPicker(initialRouteName, options) {
-    global.push(PageKeys.camera, {
+    Navigation.push(PageKeys.camera, {
         ...options,
         callback: (data) => {
             options.callback && options.callback(data);
