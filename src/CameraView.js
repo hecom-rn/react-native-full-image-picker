@@ -16,7 +16,6 @@ export default class extends React.PureComponent {
         maxSize: 1,
         sideType: RNCamera.Constants.Type.back,
         flashMode: 0,
-        videoQuality: RNCamera.Constants.VideoQuality["480p"],
         pictureOptions: {},
         recordingOptions: {},
     };
@@ -105,7 +104,7 @@ export default class extends React.PureComponent {
                 <RNCamera
                     ref={cam => this.camera = cam}
                     type={this.state.sideType}
-                    defaultVideoQuality={this.props.videoQuality}
+                    defaultVideoQuality={this.props.videoQuality || RNCamera.Constants.VideoQuality["480p"]}
                     flashMode={this.flashModes[this.state.flashMode]}
                     style={styles.camera}
                     captureAudio={this.props.isVideo}
@@ -288,7 +287,7 @@ export default class extends React.PureComponent {
                     },
                 });
                 Toast.show(err.message || '相机拍照异常');
-                
+
                 this.takePictureing = false;
                 this.camera.pausePreview();
                 this.camera.resumePreview();
