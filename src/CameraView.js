@@ -2,7 +2,7 @@ import React from 'react';
 import { Alert, Dimensions, Image, Platform, StatusBar, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { RNCamera } from 'react-native-camera';
 import { getSafeAreaInset } from '@hecom/react-native-pure-navigation-bar';
-import ImageResizer from 'react-native-image-resizer';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
 import ImageMarker, { Position } from 'react-native-image-marker';
 import Orientation from 'react-native-orientation-locker';
 import ViewShot from 'react-native-view-shot';

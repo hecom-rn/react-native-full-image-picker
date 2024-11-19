@@ -57,6 +57,7 @@
         }
     },
     "peerDependencies": {
+        "@bam.tech/react-native-image-resizer": "*",
         "@react-native-community/cameraroll": "*",
         "react-native-fs": "*",
         "react-native-video": "*",
