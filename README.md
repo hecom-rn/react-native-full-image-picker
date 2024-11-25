@@ -47,7 +47,7 @@ npm install --save react-native-full-image-picker
 **NOTICE**: This library has no native code for iOS and Android. But you should also install native code of these libraries:
 
 * [CameraRoll](https://facebook.github.io/react-native/docs/cameraroll): Used to get all photos in camera roll or photo library.
-* [react-native-camera](https://github.com/react-native-community/react-native-camera): Used to show camera in view.
+* [react-native-vision-camera](https://github.com/mrousavy/react-native-vision-camera): Used to show camera in view.
 * [react-native-video](https://github.com/react-native-community/react-native-video): Used to preview the video.
 * [react-native-fs](https://github.com/itinance/react-native-fs): Used to copy generated photo or video to a temporary place.
 
