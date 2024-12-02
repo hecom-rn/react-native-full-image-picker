@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Alert, Dimensions, Image, Platform, StatusBar, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Camera, useCameraDevice, useCameraFormat, CameraProps, PhotoFile, VideoFile } from 'react-native-vision-camera';
 import { getSafeAreaInset } from '@hecom/react-native-pure-navigation-bar';
-import ImageResizer from '@bam.tech/react-native-image-resizer';
+// import ImageResizer from '@bam.tech/react-native-image-resizer';
 import ImageMarker, { Position } from 'react-native-image-marker';
 import Orientation from 'react-native-orientation-locker';
 import ViewShot from 'react-native-view-shot';
@@ -204,29 +204,29 @@ export default function CameraView(props: Props): React.ReactElement {
                     }
                 }
                 if (viewShot.current) {
-                    const watermarkImage = await viewShot.current.capture();
-                    const { width, height } = await _getImageSize(watermarkImage);
-                    const resizedImage = await ImageResizer.createResizedImage(
-                        item.path,
-                        width,
-                        height,
-                        'PNG',
-                        100,
-                    );
-                    const url = await ImageMarker.markImage({
-                        src: { uri: resizedImage.uri },
-                        markerSrc: { uri: watermarkImage },
-                        position: Position.center,
-                        scale: 1,
-                        quality: 100,
-                        markerScale: 1,
-                    });
-                    item = {
-                        ...item,
-                        path: (Platform.OS === "android" ? "file://" : "") + url,
-                        width,
-                        height,
-                    };
+                    // const watermarkImage = await viewShot.current.capture();
+                    // const { width, height } = await _getImageSize(watermarkImage);
+                    // const resizedImage = await ImageResizer.createResizedImage(
+                    //     item.path,
+                    //     width,
+                    //     height,
+                    //     'PNG',
+                    //     100,
+                    // );
+                    // const url = await ImageMarker.markImage({
+                    //     src: { uri: resizedImage.uri },
+                    //     markerSrc: { uri: watermarkImage },
+                    //     position: Position.center,
+                    //     scale: 1,
+                    //     quality: 100,
+                    //     markerScale: 1,
+                    // });
+                    // item = {
+                    //     ...item,
+                    //     path: (Platform.OS === "android" ? "file://" : "") + url,
+                    //     width,
+                    //     height,
+                    // };
                 }
                 setTakePicture(false);
                 if (maxSize > 1) {
