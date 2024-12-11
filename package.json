@@ -61,6 +61,7 @@
         "@react-native-community/cameraroll": "*",
         "react-native-fs": "*",
         "react-native-video": "*",
+        "react-native-syan-image-picker": "*",
         "react-native-vision-camera": "*",
         "@hecom/react-native-pure-navigation-bar": "*",
         "react-native-root-siblings": "*",

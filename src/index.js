@@ -1,15 +1,8 @@
-import React from 'react';
-import RootSiblings from 'react-native-root-siblings';
 import Navigation from '@hecom/navigation';
 import PageKeys from './PageKeys';
 import PhotoModalPage from './PhotoModalPage';
-
-import {
-    NativeModules,
-    Dimensions,
-} from 'react-native';
-
-const { RNSyanImagePicker } = NativeModules;
+import { Dimensions } from 'react-native';
+import { Picker as RNSyanImagePicker} from './Picker';
 
 const { width } = Dimensions.get('window');
 /**
@@ -57,7 +50,6 @@ const defaultOptions = {
 const getCamera = (options) => showPicker(PageKeys.camera, {...options, isVideo: false});
 const getVideo = (options) => showPicker(PageKeys.camera, {...options, isVideo: true});
 const getAlbum = (options) => showImagePicker(options, callback);
-let sibling = null;
 
 function showPicker(initialRouteName, options) {
     Navigation.push(PageKeys.camera, {
@@ -67,19 +59,6 @@ function showPicker(initialRouteName, options) {
             Navigation.pop();
         }
     });
-    // if (sibling) {
-    //     return null;
-    // }
-    // sibling = new RootSiblings(
-    //     <PhotoModalPage
-    //         initialRouteName={initialRouteName}
-    //         onDestroy={() => {
-    //             sibling && sibling.destroy();
-    //             sibling = null;
-    //         }}
-    //         {...options}
-    //     />
-    // );
 }
 
 /**
