@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Alert, Dimensions, Image, Platform, StatusBar, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Camera, useCameraDevice, useCameraFormat, CameraProps, PhotoFile, VideoFile } from 'react-native-vision-camera';
 import { getSafeAreaInset } from '@hecom/react-native-pure-navigation-bar';
-// import ImageResizer from '@bam.tech/react-native-image-resizer';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
 import ImageMarker, { Position } from 'react-native-image-marker';
 import Orientation from 'react-native-orientation-locker';
+import RNFS from 'react-native-fs';
 import ViewShot from 'react-native-view-shot';
 import Video from 'react-native-video';
 import PageKeys from '@hecom-rn/react-native-full-image-picker/src/PageKeys';
@@ -58,7 +59,8 @@ export default function CameraView(props: Props): React.ReactElement {
     const camera = useRef<Camera>(null);
     const viewShot = useRef<ViewShot>(null);
     const flashModes = ['off', 'on'];
-    const { width, height } = Dimensions.get('window');
+    const [size, setSize] = useState(Dimensions.get('window'));
+    const { width, height } = size;
     const { top, bottom } = getSafeAreaInset();
     const ratio = 4 / 3;
     const otherH = isVideo ? bottomHeight : height - top - bottom - ratio * width;
@@ -185,13 +187,17 @@ export default function CameraView(props: Props): React.ReactElement {
 
     const _getImageSize = (path: string) => {
         return new Promise((resolve, reject) => {
-            Image.getSize(path, (width, height) => resolve({ width, height }), () => reject());
+            Image.getSize(path, (width, height) => {
+                resolve({ width, height });
+            }, (err) => {
+                reject(err);
+            });
         });
     };
 
     const _clickTakePicture = async () => {
         if (takePicture) return;
-        if (camera.current) {
+        if (camera?.current) {
             try {
                 setTakePicture(true);
                 let item = await camera.current.takePhoto({
@@ -203,40 +209,54 @@ export default function CameraView(props: Props): React.ReactElement {
                         item.path = item.path.substring(7);
                     }
                 }
+                const prefix = Platform.select({
+                    default: "",
+                    harmony: "file://",
+                });
+                let itemPath = `${prefix}${item.path}`;
                 if (viewShot.current) {
-                    // const watermarkImage = await viewShot.current.capture();
-                    // const { width, height } = await _getImageSize(watermarkImage);
-                    // const resizedImage = await ImageResizer.createResizedImage(
-                    //     item.path,
-                    //     width,
-                    //     height,
-                    //     'PNG',
-                    //     100,
-                    // );
-                    // const url = await ImageMarker.markImage({
-                    //     src: { uri: resizedImage.uri },
-                    //     markerSrc: { uri: watermarkImage },
-                    //     position: Position.center,
-                    //     scale: 1,
-                    //     quality: 100,
-                    //     markerScale: 1,
-                    // });
-                    // item = {
-                    //     ...item,
-                    //     path: (Platform.OS === "android" ? "file://" : "") + url,
-                    //     width,
-                    //     height,
-                    // };
+                    const watermarkImage = await viewShot.current.capture();
+                    const { width: imageWidth, height: imageHeight } = await _getImageSize(`${prefix}${watermarkImage}`);
+
+                    const fileCopy = Platform.select({
+                        default: () => { },
+                        harmony: async () => {
+                            const destPath = `file://${RNFS.CachesDirectoryPath}/${new Date().getTime()}.jpeg`;
+                            await RNFS.copyFile(itemPath, destPath)
+                            itemPath = destPath;
+                        },
+                    });
+                    await fileCopy();
+
+                    const resizedImage = await ImageResizer.createResizedImage(
+                        itemPath,
+                        imageWidth,
+                        imageHeight,
+                        'PNG',
+                        100,
+                    );
+                    const url = await ImageMarker.markImage({
+                        backgroundImage: { src: resizedImage.uri },
+                        watermarkImages: [{ src: watermarkImage, position: { position: Position.center }, alpha: 0.3 }],
+                        quality: 100,
+                    });
+                    const path = Platform.select({
+                        default: url,
+                        harmony: url.replace('cn.hecom.cloud.har', ''),
+                        android: `file://${url}`
+                    });
+                    item = { ...item, path, width, height };
+                    itemPath = path;
                 }
                 setTakePicture(false);
                 if (maxSize > 1) {
                     if (data.length >= maxSize) {
                         Alert.alert('', maxSizeTakeAlert?.(maxSize) || '');
                     } else {
-                        setData([...data, { ...item, uri: item.path }]);
+                        setData([...data, { ...item, uri: itemPath }]);
                     }
                 } else {
-                    setData([{ ...item, uri: item.path }]);
+                    setData([{ ...item, uri: itemPath }]);
                     setIsPreview(true);
                 }
             } catch (err) {
@@ -252,7 +272,7 @@ export default function CameraView(props: Props): React.ReactElement {
     };
 
     const _clickRecordVideo = () => {
-        if (camera.current) {
+        if (camera?.current) {
             if (isRecording) {
                 camera.current.stopRecording();
             } else {
@@ -263,7 +283,7 @@ export default function CameraView(props: Props): React.ReactElement {
     };
 
     const _startRecording = () => {
-        camera.current?.startRecording({
+        camera?.current?.startRecording({
             flash: currentFlashMode,
             fileType: 'mp4',
             onRecordingFinished: (item) => {
@@ -319,7 +339,7 @@ export default function CameraView(props: Props): React.ReactElement {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView onLayout={(e) => setSize({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })} style={styles.container}>
             <StatusBar hidden={true} />
             {!isPreview ? (
                 <View style={{ flex: 1 }}>
@@ -333,7 +353,7 @@ export default function CameraView(props: Props): React.ReactElement {
                                 torch={currentFlashMode}
                                 isActive={true}
                                 video={isVideo}
-                                enableZoomGesture={true}
+                                enableZoomGesture={false}
                                 photoHdr={true}
                                 videoHdr={true}
                                 photo={!isVideo}
@@ -444,6 +464,6 @@ const styles = StyleSheet.create({
         backgroundColor: 'transparent',
     },
     viewShort: {
-        flex: 1, bottom: 0, top: 0, left: 0, right: 0, justifyContent: 'flex-end', position: 'absolute', backgroundColor: 'transparent', marginBottom: -2 
+        flex: 1, bottom: 0, top: 0, left: 0, right: 0, justifyContent: 'flex-end', position: 'absolute', backgroundColor: 'transparent'
     }
 });
