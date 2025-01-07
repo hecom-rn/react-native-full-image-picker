@@ -242,7 +242,7 @@ export default function CameraView(props: Props): React.ReactElement {
                     });
                     const path = Platform.select({
                         default: url,
-                        harmony: url.replace('cn.hecom.cloud.har', ''),
+                        harmony: `file://${url}`,
                         android: `file://${url}`
                     });
                     item = { ...item, path, width, height };
