@@ -114,8 +114,10 @@ export interface ImagePickerOption {
    * 清除缓存
    */
   export function deleteCache (): void;
-  
+
   export function getCamera (): void;
+
+export function getCachePath(callback: (path: null | string) => void): void;
 
   /**
    * 移除选中的图片

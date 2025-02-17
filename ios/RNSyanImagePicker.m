@@ -89,6 +89,13 @@ RCT_EXPORT_METHOD(deleteCache) {
     [fileManager removeItemAtPath: [NSString stringWithFormat:@"%@SyanImageCaches", NSTemporaryDirectory()] error:nil];
 }
 
+RCT_EXPORT_METHOD(getCachePath:(NSDictionary *)options
+                  callback:(RCTResponseSenderBlock)callback) {
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSString *path = [NSString stringWithFormat:@"%@SyanImageCaches", NSTemporaryDirectory()];
+    callback(@[path]);
+}
+
 RCT_EXPORT_METHOD(removePhotoAtIndex:(NSInteger)index) {
     if (self.selectedAssets && self.selectedAssets.count > index) {
         [self.selectedAssets removeObjectAtIndex:index];
@@ -143,11 +150,11 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
     imagePickerVc.autoDismiss = NO;
     imagePickerVc.showSelectedIndex = showSelectedIndex;
     imagePickerVc.modalPresentationStyle = UIModalPresentationFullScreen;
-    
+
     [imagePickerVc setPhotoPickerPageUIConfigBlock:^(UICollectionView *collectionView, UIView *bottomToolBar, UIButton *previewButton, UIButton *originalPhotoButton, UILabel *originalPhotoLabel, UIButton *doneButton, UIImageView *numberImageView, UILabel *numberLabel, UIView *divideLine) {
         [doneButton setTitleColor:[UIColor colorWithRed:255 / 255.0 green:79 / 255.0 blue:75 / 255.0 alpha:1.0] forState:UIControlStateNormal];
     }];
-    
+
     [imagePickerVc setPhotoPreviewPageUIConfigBlock:^(UICollectionView *collectionView, UIView *naviBar, UIButton *backButton, UIButton *selectButton, UILabel *indexLabel, UIView *toolBar, UIButton *originalPhotoButton, UILabel *originalPhotoLabel, UIButton *doneButton, UIImageView *numberImageView, UILabel *numberLabel) {
         [doneButton setTitleColor:[UIColor colorWithRed:255 / 255.0 green:79 / 255.0 blue:75 / 255.0 alpha:1.0] forState:UIControlStateNormal];
     }];
@@ -243,15 +250,15 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
     imagePickerVc.allowPickingMultipleVideo = isGif ? YES : allowPickingMultipleVideo;
     imagePickerVc.allowCrop = isCrop;   // 裁剪
     imagePickerVc.modalPresentationStyle = UIModalPresentationFullScreen;
-    
+
     [imagePickerVc setPhotoPickerPageUIConfigBlock:^(UICollectionView *collectionView, UIView *bottomToolBar, UIButton *previewButton, UIButton *originalPhotoButton, UILabel *originalPhotoLabel, UIButton *doneButton, UIImageView *numberImageView, UILabel *numberLabel, UIView *divideLine) {
         [doneButton setTitleColor:[UIColor colorWithRed:255 / 255.0 green:79 / 255.0 blue:75 / 255.0 alpha:1.0] forState:UIControlStateNormal];
     }];
-    
+
     [imagePickerVc setPhotoPreviewPageUIConfigBlock:^(UICollectionView *collectionView, UIView *naviBar, UIButton *backButton, UIButton *selectButton, UILabel *indexLabel, UIView *toolBar, UIButton *originalPhotoButton, UILabel *originalPhotoLabel, UIButton *doneButton, UIImageView *numberImageView, UILabel *numberLabel) {
         [doneButton setTitleColor:[UIColor colorWithRed:255 / 255.0 green:79 / 255.0 blue:75 / 255.0 alpha:1.0] forState:UIControlStateNormal];
     }];
-    
+
     if (isRecordSelected) {
         imagePickerVc.selectedAssets = self.selectedAssets; // 当前已选中的图片
     }
@@ -492,7 +499,7 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
     NSMutableString *filePath = [NSMutableString string];
     BOOL isPNG = [fileExtension hasSuffix:@"PNG"] || [fileExtension hasSuffix:@"png"];
     BOOL compressFocusAlpha = [self.cameraOptions sy_boolForKey:@"compressFocusAlpha"];
-    
+
     if (isPNG) {
         [filePath appendString:[NSString stringWithFormat:@"%@SyanImageCaches/%@", NSTemporaryDirectory(), filename]];
     } else {
@@ -531,7 +538,7 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
     NSMutableString *filePath = [NSMutableString string];
     BOOL isPNG = [fileExtension hasSuffix:@"PNG"] || [fileExtension hasSuffix:@"png"];
     BOOL compressFocusAlpha = [self.cameraOptions sy_boolForKey:@"compressFocusAlpha"];
-    
+
     if (isGIF) {
         image = [UIImage sd_tz_animatedGIFWithData:data];
         writeData = data;

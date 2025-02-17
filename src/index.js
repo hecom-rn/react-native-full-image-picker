@@ -8,6 +8,7 @@ import {
     NativeModules,
     Dimensions,
 } from 'react-native';
+import { Platform } from 'react-native';
 
 const { RNSyanImagePicker } = NativeModules;
 
@@ -171,6 +172,15 @@ export default {
      */
     deleteCache() {
         RNSyanImagePicker.deleteCache()
+    },
+
+    /**
+     * 获取缓存路径
+     */
+    getCachePath(callback) {
+        if (Platform.OS === 'ios') {
+            RNSyanImagePicker.getCachePath({}, callback)
+        }
     },
 
     /**
