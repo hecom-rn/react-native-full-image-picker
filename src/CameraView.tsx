@@ -237,7 +237,7 @@ export default function CameraView(props: Props): React.ReactElement {
                     );
                     const url = await ImageMarker.markImage({
                         backgroundImage: { src: resizedImage.uri },
-                        watermarkImages: [{ src: watermarkImage, position: { position: Position.center }, alpha: 0.3 }],
+                        watermarkImages: [{ src: watermarkImage, position: { position: Position.center } }],
                         quality: 100,
                     });
                     const path = Platform.select({
