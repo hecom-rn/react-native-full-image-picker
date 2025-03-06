@@ -62,7 +62,7 @@ export default function CameraView(props: Props): React.ReactElement {
     const [size, setSize] = useState(Dimensions.get('window'));
     const { width, height } = size;
     const { top, bottom } = getSafeAreaInset();
-    const ratio = 4 / 3;
+    const ratio = Platform.select({ harmony: 16 / 9, default:  4 / 3 });
     const otherH = isVideo ? bottomHeight : height - top - bottom - ratio * width;
     const bottomH = otherH > bottomHeight ? otherH * 0.75 > bottomHeight ? otherH * 0.75 : otherH : otherH;
     const topH = otherH - bottomH;
@@ -242,7 +242,6 @@ export default function CameraView(props: Props): React.ReactElement {
                     });
                     const path = Platform.select({
                         default: url,
-                        harmony: `file://${url}`,
                         android: `file://${url}`
                     });
                     item = { ...item, path, width, height };
@@ -357,11 +356,11 @@ export default function CameraView(props: Props): React.ReactElement {
                                 photoHdr={true}
                                 videoHdr={true}
                                 photo={!isVideo}
-                                style={{ flex: 1 }}
+                                style={{ width: width, height: width * ratio }}
                                 {...cameraProps}
                             />}
                         {waterView && (
-                            <ViewShot ref={viewShot} style={styles.viewShort}>
+                            <ViewShot ref={viewShot} style={[styles.viewShort, {width: width, height: width * ratio }]}>
                                 {waterView()}
                             </ViewShot>
                         )}
@@ -396,7 +395,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: 'black',
-        marginTop: Platform.OS === 'ios' ? 0 : StatusBar.currentHeight,
+        marginTop: Platform.OS === 'android' ?  StatusBar.currentHeight : 0,
     },
     top: {
         position: 'absolute',
