@@ -119,6 +119,8 @@ export interface ImagePickerOption {
 
   export function getCamera (): void;
 
+export function getCachePath(callback: (path: null | string) => void): void;
+
   /**
    * 移除选中的图片
    * @param {Number} index 要移除的图片下标

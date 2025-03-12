@@ -1,7 +1,7 @@
 import Navigation from '@hecom/navigation';
 import PageKeys from './PageKeys';
 import PhotoModalPage from './PhotoModalPage';
-import { Dimensions } from 'react-native';
+import { Dimensions, Platform } from 'react-native';
 import { Picker as RNSyanImagePicker} from './Picker';
 
 const { width } = Dimensions.get('window');
@@ -150,6 +150,15 @@ export default {
      */
     deleteCache() {
         RNSyanImagePicker.deleteCache()
+    },
+
+    /**
+     * 获取缓存路径
+     */
+    getCachePath(callback) {
+        if (Platform.OS === 'ios') {
+            RNSyanImagePicker.getCachePath({}, callback)
+        }
     },
 
     /**
