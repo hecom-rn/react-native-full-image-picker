@@ -438,6 +438,8 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
             NSInteger size = [[NSFileManager defaultManager] attributesOfItemAtPath:filePath error:nil].fileSize;
             [selectedPhotos addObject: @{
                 @"coverUri": filePath,
+                @"path": filePath,
+                @"uri": filePath,
                 @"size": @(size),
                 @"index": @(idx),
                 @"fileName": [asset valueForKey:@"filename"],
