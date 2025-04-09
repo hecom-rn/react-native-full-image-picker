@@ -434,8 +434,11 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
         if (asset.mediaType == PHAssetMediaTypeVideo) {
             long long interval = [[NSDate date] timeIntervalSince1970];
             NSString *identifier = [NSString stringWithFormat:@"identifier_%lld_%lu", interval , (unsigned long)idx];
+            NSString *filePath = [self handleCropImage:photos[idx] phAsset:asset quality:quality][@"uri"];
+            NSInteger size = [[NSFileManager defaultManager] attributesOfItemAtPath:filePath error:nil].fileSize;
             [selectedPhotos addObject: @{
-                @"coverUri": [self handleCropImage:photos[idx] phAsset:asset quality:quality][@"uri"],
+                @"coverUri": filePath,
+                @"size": @(size),
                 @"index": @(idx),
                 @"fileName": [asset valueForKey:@"filename"],
                 @"type": @"video",
