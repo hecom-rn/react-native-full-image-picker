@@ -104,6 +104,8 @@ export default class extends React.PureComponent {
                 <RNCamera
                     ref={cam => this.camera = cam}
                     type={this.state.sideType}
+                    useNativeZoom
+                    maxZoom={5}
                     defaultVideoQuality={this.props.videoQuality || RNCamera.Constants.VideoQuality["480p"]}
                     flashMode={this.flashModes[this.state.flashMode]}
                     style={styles.camera}
