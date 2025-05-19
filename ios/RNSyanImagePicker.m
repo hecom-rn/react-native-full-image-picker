@@ -509,7 +509,7 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
     NSData *writeData = (isPNG && compressFocusAlpha) ? UIImagePNGRepresentation(image) : UIImageJPEGRepresentation(image, quality/100);
     [writeData writeToFile:filePath atomically:YES];
 
-    photo[@"name"]      = [asset valueForKey:@"filename"],
+    photo[@"name"]      = [phAsset valueForKey:@"filename"],
     photo[@"uri"]       = filePath;
     photo[@"width"]     = @(image.size.width);
     photo[@"height"]    = @(image.size.height);
