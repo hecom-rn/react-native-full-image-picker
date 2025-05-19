@@ -437,7 +437,7 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
             [selectedPhotos addObject: @{
                 @"coverUri": [self handleCropImage:photos[idx] phAsset:asset quality:quality][@"uri"],
                 @"index": @(idx),
-                @"fileName": [asset valueForKey:@"filename"],
+                @"name": [asset valueForKey:@"filename"],
                 @"type": @"video",
                 @"fileType": @"mp4",
                 @"identifier": identifier,
@@ -509,6 +509,7 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
     NSData *writeData = (isPNG && compressFocusAlpha) ? UIImagePNGRepresentation(image) : UIImageJPEGRepresentation(image, quality/100);
     [writeData writeToFile:filePath atomically:YES];
 
+    photo[@"name"]      = [asset valueForKey:@"filename"],
     photo[@"uri"]       = filePath;
     photo[@"width"]     = @(image.size.width);
     photo[@"height"]    = @(image.size.height);
@@ -576,7 +577,7 @@ RCT_EXPORT_METHOD(openVideoPicker:(NSDictionary *)options callback:(RCTResponseS
 - (NSMutableDictionary *)handleVideoData:(NSString *)outputPath asset:(PHAsset *)asset coverImage:(UIImage *)coverImage quality:(CGFloat)quality {
     NSMutableDictionary *video = [NSMutableDictionary dictionary];
     video[@"uri"] = outputPath;
-    video[@"fileName"] = [asset valueForKey:@"filename"];
+    video[@"name"] = [asset valueForKey:@"filename"];
     NSInteger size = [[NSFileManager defaultManager] attributesOfItemAtPath:outputPath error:nil].fileSize;
     video[@"size"] = @(size);
     video[@"duration"] = @(asset.duration);
