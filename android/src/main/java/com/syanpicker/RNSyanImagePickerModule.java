@@ -477,6 +477,7 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
         imageMap.putString("type", "image");
         imageMap.putString("uri", "file://" +path);
         imageMap.putString("path", "file://" +path);
+        imageMap.putString("name", media.getFileName());
 //         imageMap.putString("compressPath", "file://" +compressPath);
 //         imageMap.putString("original_uri", "file://" + path);
         imageMap.putInt("size", (int) new File(path).length());
@@ -502,7 +503,7 @@ public class RNSyanImagePickerModule extends ReactContextBaseJavaModule {
         imageMap.putString("path", "file://" +path);
         imageMap.putString("original_uri", "file://" + path);
         imageMap.putInt("size", (int) new File(path).length());
-
+        imageMap.putString("name", media.getFileName());
         if (enableBase64) {
             String encodeString = getBase64StringFromFile(path);
             imageMap.putString("base64", encodeString);
