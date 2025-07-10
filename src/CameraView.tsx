@@ -353,7 +353,7 @@ export default function CameraView(props: Props): React.ReactElement {
                                 torch={currentFlashMode}
                                 isActive={true}
                                 video={isVideo}
-                                enableZoomGesture={false}
+                                enableZoomGesture={true}
                                 photoHdr={true}
                                 videoHdr={true}
                                 photo={!isVideo}
