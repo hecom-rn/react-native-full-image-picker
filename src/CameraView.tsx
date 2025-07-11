@@ -101,23 +101,36 @@ export default class extends React.PureComponent {
         return (
             <View style={{ flex: 1 }}>
                 <View style={{ height: this.topH }} />
-                <RNCamera
-                    ref={cam => this.camera = cam}
-                    type={this.state.sideType}
-                    useNativeZoom
-                    maxZoom={5}
-                    defaultVideoQuality={this.props.videoQuality || RNCamera.Constants.VideoQuality["480p"]}
-                    flashMode={this.flashModes[this.state.flashMode]}
-                    style={styles.camera}
-                    captureAudio={this.props.isVideo}
-                    fixOrientation={true}
-                >
+                <View style={{ flex: 1 }}>
+                    <RNCamera
+                        ref={cam => this.camera = cam}
+                        type={this.state.sideType}
+                        useNativeZoom
+                        maxZoom={5}
+                        defaultVideoQuality={this.props.videoQuality || RNCamera.Constants.VideoQuality["480p"]}
+                        flashMode={this.flashModes[this.state.flashMode]}
+                        style={styles.camera}
+                        captureAudio={this.props.isVideo}
+                        fixOrientation={true}
+                    />
                     {this.props.waterView && (
-                        <ViewShot ref={ref => this.viewShot = ref} pointerEvents="none" style={{ flex: 1, backgroundColor: 'transparent', marginBottom: -2 }}>
-                            {this.props.waterView?.()}
-                        </ViewShot>
+                        <View pointerEvents="none">
+                            <ViewShot 
+                                ref={ref => this.viewShot = ref}
+                                style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    bottom: -2,
+                                    backgroundColor: 'transparent',
+                                }}
+                            >
+                                {this.props.waterView?.()}
+                            </ViewShot>
+                        </View>
                     )}
-                </RNCamera>
+                </View>
                 <View style={{ height: this.bottomH }} />
             </View>
         );
