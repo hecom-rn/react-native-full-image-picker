@@ -114,18 +114,8 @@ export default class extends React.PureComponent {
                         fixOrientation={true}
                     />
                     {this.props.waterView && (
-                        <View pointerEvents="none">
-                            <ViewShot 
-                                ref={ref => this.viewShot = ref}
-                                style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    right: 0,
-                                    bottom: -2,
-                                    backgroundColor: 'transparent',
-                                }}
-                            >
+                        <View pointerEvents="none" style={styles.viewShort}>
+                            <ViewShot style={{flex : 1}} ref={ref => this.viewShot = ref}>
                                 {this.props.waterView?.()}
                             </ViewShot>
                         </View>
@@ -447,4 +437,7 @@ const styles = StyleSheet.create({
         color: 'white',
         backgroundColor: 'transparent',
     },
+    viewShort: {
+        flex: 1, bottom: 0, top: 0, left: 0, right: 0, justifyContent: 'flex-end', position: 'absolute', backgroundColor: 'transparent'
+    }
 });
