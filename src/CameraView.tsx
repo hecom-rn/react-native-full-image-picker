@@ -361,9 +361,11 @@ export default function CameraView(props: Props): React.ReactElement {
                                 {...cameraProps}
                             />}
                         {waterView && (
-                            <ViewShot ref={viewShot} style={[styles.viewShort, {width: width, height: width * ratio }]}>
-                                {waterView()}
-                            </ViewShot>
+                            <View style={[styles.viewShort, { width: width, height: width * ratio }]} pointerEvents="none">
+                                <ViewShot ref={viewShot}>
+                                    {waterView()}
+                                </ViewShot>
+                            </View>
                         )}
                     </View>
                     <View style={{ height: bottomH }} />
