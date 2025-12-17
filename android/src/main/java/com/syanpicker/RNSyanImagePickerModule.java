@@ -34,6 +34,7 @@ import com.luck.picture.lib.style.TitleBarStyle;
 import com.luck.picture.lib.utils.DensityUtil;
 import com.luck.picture.lib.utils.PictureFileUtils;
 import com.luck.picture.lib.utils.SdkVersionUtils;
+import com.syanpicker.R;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
