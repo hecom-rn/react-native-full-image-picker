@@ -1,9 +1,9 @@
-import React from 'react';
-import { Modal, BackHandler, InteractionManager, Platform } from 'react-native';
-import { createStackNavigator } from '@react-navigation/stack';
 import { NavigationContainer } from '@react-navigation/native';
-import PageKeys from './PageKeys';
+import { createStackNavigator } from '@react-navigation/stack';
+import React from 'react';
+import { BackHandler, Modal } from 'react-native';
 import CameraView from './CameraView';
+import PageKeys from './PageKeys';
 import PreviewMultiView from './PreviewMultiView';
 
 export default class PhotoModalPage extends React.PureComponent {
@@ -22,18 +22,20 @@ export default class PhotoModalPage extends React.PureComponent {
     };
 
     componentDidMount() {
-        BackHandler.addEventListener('hardwareBackPress', this._clickBack);
+        this.backHandlerSubscription = BackHandler.addEventListener('hardwareBackPress', this._clickBack);
     }
 
     componentWillUnmount() {
-        BackHandler.removeEventListener('hardwareBackPress', this._clickBack);
+        if (this.backHandlerSubscription && this.backHandlerSubscription.remove) {
+            this.backHandlerSubscription.remove();
+        }
     }
 
     render() {
         const callback = (data) => {
             this.props.callback && this.props.callback(data);
             this.props.onDestroy && this.props.onDestroy();
-         
+
         };
         const allscenes = {
             [PageKeys.camera]: CameraView,
@@ -62,7 +64,7 @@ export default class PhotoModalPage extends React.PureComponent {
                         name={cur}
                         component={withUnwrap(allscenes[cur])}
                         options={() => {
-                            return {gesturesEnabled: false}
+                            return { gesturesEnabled: false }
                         }}
                     />
                 );
