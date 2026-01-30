@@ -1,16 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Alert, Dimensions, Image, Platform, StatusBar, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Camera, useCameraDevice, useCameraFormat, CameraProps, PhotoFile, VideoFile } from 'react-native-vision-camera';
-import { getSafeAreaInset } from '@hecom/react-native-pure-navigation-bar';
 import ImageResizer from '@bam.tech/react-native-image-resizer';
+import PageKeys from '@hecom-rn/react-native-full-image-picker/src/PageKeys';
+import { getSafeAreaInset } from '@hecom/react-native-pure-navigation-bar';
+import * as Sentry from '@sentry/react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, Dimensions, Image, Platform, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import RNFS from 'react-native-fs';
 import ImageMarker, { Position } from 'react-native-image-marker';
 import Orientation from 'react-native-orientation-locker';
-import RNFS from 'react-native-fs';
-import ViewShot from 'react-native-view-shot';
-import Video from 'react-native-video';
-import PageKeys from '@hecom-rn/react-native-full-image-picker/src/PageKeys';
-import * as Sentry from '@sentry/react-native';
 import Toast from 'react-native-root-toast';
+import Video from 'react-native-video';
+import ViewShot from 'react-native-view-shot';
+import { Camera, CameraProps, PhotoFile, useCameraDevice, useCameraFormat, VideoFile } from 'react-native-vision-camera';
 
 type Props = {
     maxSize?: number,
@@ -227,13 +227,17 @@ export default function CameraView(props: Props): React.ReactElement {
                         },
                     });
                     await fileCopy();
-
+                    const rotation = Platform.select({
+                        default: 0,
+                        android: 90,
+                    });
                     const resizedImage = await ImageResizer.createResizedImage(
                         itemPath,
                         imageWidth,
                         imageHeight,
                         'PNG',
                         100,
+                        rotation,
                     );
                     const url = await ImageMarker.markImage({
                         backgroundImage: { src: resizedImage.uri },
