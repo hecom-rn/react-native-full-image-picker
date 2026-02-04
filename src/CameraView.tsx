@@ -62,7 +62,7 @@ export default function CameraView(props: Props): React.ReactElement {
     const [size, setSize] = useState(Dimensions.get('window'));
     const { width, height } = size;
     const { top, bottom } = getSafeAreaInset();
-    const ratio = Platform.select({ harmony: 16 / 9, default:  4 / 3 });
+    const ratio = Platform.select({ harmony: 16 / 9, default: 4 / 3 });
     const otherH = isVideo ? bottomHeight : height - top - bottom - ratio * width;
     const bottomH = otherH > bottomHeight ? otherH * 0.75 > bottomHeight ? otherH * 0.75 : otherH : otherH;
     const topH = otherH - bottomH;
@@ -210,10 +210,27 @@ export default function CameraView(props: Props): React.ReactElement {
                     }
                 }
                 const prefix = Platform.select({
-                    default: "",
+                    ios: "",
+                    android: "file://",
                     harmony: "file://",
                 });
                 let itemPath = `${prefix}${item.path}`;
+                if (item?.width > item?.height && Platform.OS === 'android') {
+                    // 横向图片需要旋转
+                    const rotatedImage = await ImageResizer.createResizedImage(
+                        itemPath,
+                        item.height,
+                        item.width,
+                        'JPEG',
+                        100,
+                        0,
+                    );
+                    item = {
+                        ...item,
+                        ...rotatedImage,
+                    }
+                    itemPath = `${prefix}${item.path}`;
+                }
                 if (viewShot.current) {
                     const watermarkImage = await viewShot.current.capture();
                     const { width: imageWidth, height: imageHeight } = await _getImageSize(`${prefix}${watermarkImage}`);
@@ -227,17 +244,14 @@ export default function CameraView(props: Props): React.ReactElement {
                         },
                     });
                     await fileCopy();
-                    const rotation = Platform.select({
-                        default: 0,
-                        android: 90,
-                    });
+
                     const resizedImage = await ImageResizer.createResizedImage(
                         itemPath,
                         imageWidth,
                         imageHeight,
                         'PNG',
                         100,
-                        rotation,
+                        0,
                     );
                     const url = await ImageMarker.markImage({
                         backgroundImage: { src: resizedImage.uri },
@@ -366,7 +380,7 @@ export default function CameraView(props: Props): React.ReactElement {
                             />}
                         {waterView && (
                             <View style={[styles.viewShort, { width: width, height: width * ratio }]} pointerEvents="none">
-                                <ViewShot style={{flex: 1}} ref={viewShot}>
+                                <ViewShot style={{ flex: 1 }} ref={viewShot}>
                                     {waterView()}
                                 </ViewShot>
                             </View>
@@ -402,7 +416,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: 'black',
-        marginTop: Platform.OS === 'android' ?  StatusBar.currentHeight : 0,
+        marginTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
     top: {
         position: 'absolute',
