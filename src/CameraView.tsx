@@ -1,210 +1,237 @@
-import React from 'react';
-import { Alert, Dimensions, Image, Platform, StatusBar, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { RNCamera } from 'react-native-camera';
-import { getSafeAreaInset } from '@hecom/react-native-pure-navigation-bar';
-import ImageResizer from 'react-native-image-resizer';
+import ImageResizer from '@bam.tech/react-native-image-resizer';
+import * as Sentry from '@sentry/react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, Dimensions, Image, Platform, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import RNFS from 'react-native-fs';
 import ImageMarker, { Position } from 'react-native-image-marker';
 import Orientation from 'react-native-orientation-locker';
-import ViewShot from 'react-native-view-shot';
-import Video from 'react-native-video';
-import PageKeys from './PageKeys';
-import * as Sentry from '@sentry/react-native';
 import Toast from 'react-native-root-toast';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Video from 'react-native-video';
+import ViewShot from 'react-native-view-shot';
+import { Camera, CameraProps, PhotoFile, useCameraDevice, useCameraFormat, VideoFile } from 'react-native-vision-camera';
+import PageKeys from './PageKeys';
 
-export default class extends React.PureComponent {
-    static defaultProps = {
-        maxSize: 1,
-        sideType: RNCamera.Constants.Type.back,
-        flashMode: 0,
-        pictureOptions: {},
-        recordingOptions: {},
+type Props = {
+    maxSize?: number;
+    sideType?: 'back' | 'front';
+    flashMode?: 'off' | 'on';
+    cameraProps?: Partial<CameraProps>;
+    pictureOptions?: { width?: number };
+    isVideo?: boolean;
+    waterView?: () => React.ReactElement;
+    layerView?: () => React.ReactElement;
+    cancelLabel?: string;
+    okLabel?: string;
+    useVideoLabel?: string;
+    usePhotoLabel?: string;
+    maxSizeTakeAlert?: (maxSize: number) => string;
+    navigation?: any;
+    callback?: (data: Array<{ uri: string } & Result>) => void;
+};
+
+type Result = PhotoFile | VideoFile;
+
+const topHeight = 60;
+const bottomHeight = 84;
+const CAMERA_RATIO = Platform.select({ harmony: 16 / 9, default: 4 / 3 })!;
+
+export default function CameraView(props: Props): React.ReactElement {
+    const {
+        maxSize = 1,
+        sideType = 'back',
+        flashMode = 'off',
+        cameraProps = {},
+        pictureOptions: { width: picWidth = 1920 } = {},
+        isVideo = false,
+        waterView,
+        layerView,
+        cancelLabel = '',
+        okLabel = '',
+        useVideoLabel = '',
+        usePhotoLabel = '',
+        maxSizeTakeAlert,
+        navigation,
+        callback,
+    } = props;
+
+    const insets = useSafeAreaInsets();
+    const [data, setData] = useState<Array<{ uri: string } & Result>>([]);
+    const [isPreview, setIsPreview] = useState(false);
+    const [currentSideType, setCurrentSideType] = useState<'back' | 'front'>(sideType);
+    const [currentFlashMode, setCurrentFlashMode] = useState<'off' | 'on'>(flashMode);
+    const [isRecording, setIsRecording] = useState(false);
+    const [takingPicture, setTakingPicture] = useState(false);
+    const cameraRef = useRef<Camera>(null);
+    const viewShotRef = useRef<ViewShot>(null);
+    const flashModes: Array<'off' | 'on'> = ['off', 'on'];
+    const [layoutSize, setLayoutSize] = useState(() => Dimensions.get('window'));
+
+    const { width: layoutWidth, height: layoutHeight } = layoutSize;
+    const ratio = CAMERA_RATIO;
+    const availableHeight = layoutHeight - insets.top - insets.bottom;
+
+    // Foldable screen support: cap camera width so viewfinder fits
+    const maxCameraHeight = Math.max(0, availableHeight - bottomHeight);
+    const idealCameraHeight = layoutWidth * ratio;
+    const cameraWidth = idealCameraHeight > maxCameraHeight
+        ? Math.min(layoutWidth, maxCameraHeight / ratio)
+        : layoutWidth;
+    const cameraHeight = cameraWidth * ratio;
+
+    const remainingH = Math.max(0, availableHeight - cameraHeight);
+    const bottomH = Math.max(remainingH * 0.75, bottomHeight);
+    const topH = Math.max(0, remainingH - bottomH);
+
+    const device = useCameraDevice(currentSideType);
+    const format = useCameraFormat(device, [
+        { photoAspectRatio: ratio, photoResolution: { width: picWidth, height: picWidth * ratio } }
+    ]);
+
+    useEffect(() => {
+        Orientation.lockToPortrait();
+        return () => {
+            Orientation.unlockAllOrientations();
+        };
+    }, []);
+
+    const _onLayout = (e: any) => {
+        const { width, height } = e.nativeEvent.layout;
+        setLayoutSize({ width, height });
     };
 
-    constructor(props) {
-        super(props);
-        this.flashModes = [
-            RNCamera.Constants.FlashMode.auto,
-            RNCamera.Constants.FlashMode.off,
-            RNCamera.Constants.FlashMode.on,
-        ];
-        this.state = {
-            data: [],
-            isPreview: false,
-            sideType: this.props.sideType,
-            flashMode: this.props.flashMode,
-            isRecording: false,
-        };
-        this.takePictureing = false;
-        const ratio = 4 / 3;
-        const { width, height } = Dimensions.get('window');
-        const { top, bottom } = getSafeAreaInset();
-        let otherH = this.props.isVideo ? bottomHeight : height - top - bottom - ratio * width;
-        this.bottomH =  otherH > bottomHeight ? otherH * 0.75 > bottomHeight ? otherH * 0.75 : otherH : otherH;
-        this.topH = otherH - this.bottomH;
-    }
-
-    componentDidMount() {
-        Orientation.lockToPortrait();
-    }
-
-    componentWillUnmount() {
-        Orientation.unlockAllOrientations();
-    }
-
-    render() {
-        return (
-            <SafeAreaView style={styles.container}>
-                <StatusBar hidden={true} />
-                {!this.state.isPreview ? this._renderCameraView() : this._renderPreviewView()}
-                {!this.state.isPreview && this._renderTopView()}
-                {this._renderBottomView()}
-            </SafeAreaView>
-        );
-    }
-
-    _renderTopView = () => {
-        const safeArea = getSafeAreaInset();
+    const _renderTopView = () => {
         const style = {
-            top: topHeight > this.topH ? this.topH + safeArea.top : safeArea.top,
-            left: safeArea.left,
-            right: safeArea.right,
+            top: topHeight > topH ? topH + insets.top : insets.top,
+            left: insets.left,
+            right: insets.right,
         };
-        const { flashMode } = this.state;
         let image;
-        switch (flashMode) {
-            case 1:
-                image = require('./images/flash_close.png');
-                break;
-            case 2:
+        switch (currentFlashMode) {
+            case 'on':
                 image = require('./images/flash_open.png');
                 break;
             default:
-                image = require('./images/flash_auto.png');
+                image = require('./images/flash_close.png');
         }
         return (
             <View style={[styles.top, style]}>
-                {!this.props.isVideo && this._renderTopButton(image, this._clickFlashMode)}
-                {this._renderTopButton(require('./images/switch_camera.png'), this._clickSwitchSide)}
+                {!isVideo && _renderTopButton(image, _clickFlashMode)}
+                {_renderTopButton(require('./images/switch_camera.png'), _clickSwitchSide)}
             </View>
         );
     };
 
-    _renderTopButton = (image, onPress) => {
-        return (
-            <TouchableOpacity onPress={onPress}>
-                <Image style={styles.topImage} source={image} />
-            </TouchableOpacity>
-        );
-    };
+    const _renderTopButton = (image: any, onPress: () => void) => (
+        <TouchableOpacity onPress={onPress}>
+            <Image style={styles.topImage} source={image} />
+        </TouchableOpacity>
+    );
 
-    _renderCameraView = () => {
-        return (
-            <View style={{ flex: 1 }}>
-                <View style={{ height: this.topH }} />
-                <View style={{ flex: 1 }}>
-                    <RNCamera
-                        ref={cam => this.camera = cam}
-                        type={this.state.sideType}
-                        useNativeZoom
-                        maxZoom={5}
-                        defaultVideoQuality={this.props.videoQuality || RNCamera.Constants.VideoQuality["480p"]}
-                        flashMode={this.flashModes[this.state.flashMode]}
-                        style={styles.camera}
-                        captureAudio={this.props.isVideo}
-                        fixOrientation={true}
-                    />
-                    {this.props.waterView && (
-                        <View pointerEvents="none" style={styles.viewShort}>
-                            <ViewShot style={{flex : 1}} ref={ref => this.viewShot = ref}>
-                                {this.props.waterView?.()}
+    const _renderCameraView = () => (
+        <View style={{ flex: 1 }}>
+            <View style={{ height: topH + insets.top }} />
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+                <View style={{ width: cameraWidth, height: cameraHeight }}>
+                    {device && (
+                        <Camera
+                            ref={cameraRef}
+                            device={device}
+                            format={format}
+                            torch={isVideo ? currentFlashMode : 'off'}
+                            isActive={true}
+                            video={isVideo}
+                            audio={isVideo}
+                            photo={!isVideo}
+                            enableZoomGesture={true}
+                            style={StyleSheet.absoluteFill}
+                            {...cameraProps}
+                        />
+                    )}
+                    {waterView && (
+                        <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: 'transparent' }]}>
+                            <ViewShot style={{ flex: 1 }} ref={viewShotRef}>
+                                {waterView()}
                             </ViewShot>
                         </View>
                     )}
                 </View>
-                <View style={{ height: this.bottomH }} />
             </View>
-        );
-    };
+            <View style={{ height: bottomH + insets.bottom }} />
+        </View>
+    );
 
-    _renderPreviewView = () => {
-        return (
-            <View style={{flex: 1, justifyContent: 'center', marginTop: this.topH, marginBottom: this.bottomH}}>
-                {this.props.isVideo ? (
-                    <Video
-                        source={{ uri: this.state.data[0].uri }}
-                        ref={(ref) => this.player = ref}
-                        style={{flex: 1}}
-                    />
-                ) : (
-                        <Image
-                            resizeMode='contain'
-                            style={{flex: 1}}
-                            source={{ uri: this.state.data[0].uri }}
-                        />
-                )}
-                {this.props.layerView && this.props.layerView()}
-            </View>
-        );
-    };
+    const _renderPreviewView = () => (
+        <View style={{ flex: 1, justifyContent: 'center', marginTop: topH + insets.top, marginBottom: bottomH + insets.bottom }}>
+            {isVideo ? (
+                <Video
+                    source={{ uri: data[0].uri }}
+                    style={{ flex: 1 }}
+                />
+            ) : (
+                <Image
+                    resizeMode="contain"
+                    style={{ flex: 1 }}
+                    source={{ uri: data[0].uri }}
+                />
+            )}
+            {layerView?.()}
+        </View>
+    );
 
-    _renderBottomView = () => {
-        const safeArea = getSafeAreaInset();
+    const _renderBottomView = () => {
         const style = {
-            bottom: safeArea.bottom,
-            left: safeArea.left,
-            right: safeArea.right,
-            height: this.bottomH
+            bottom: insets.bottom,
+            left: insets.left,
+            right: insets.right,
+            height: bottomH,
         };
-        const isMulti = this.props.maxSize > 1;
-        const hasPhoto = this.state.data.length > 0;
-        const inPreview = this.state.isPreview;
-        const isRecording = this.state.isRecording;
-        const buttonName = this.props.isVideo ? this.props.useVideoLabel : this.props.usePhotoLabel;
+        const isMulti = maxSize > 1;
+        const hasPhoto = data.length > 0;
+        const buttonName = isVideo ? useVideoLabel : usePhotoLabel;
         return (
             <View style={[styles.bottom, style]}>
-                {isMulti && hasPhoto ? this._renderPreviewButton() : !isRecording && this._renderBottomButton(this.props.cancelLabel, this._clickCancel)}
-                {!inPreview && this._renderTakePhotoButton()}
-                {isMulti ? hasPhoto && this._renderBottomButton(this.props.okLabel, this._clickOK) : inPreview && this._renderBottomButton(buttonName, this._clickOK)}
+                {isMulti && hasPhoto
+                    ? _renderPreviewButton()
+                    : !isRecording && _renderBottomButton(cancelLabel, _clickCancel)}
+                {!isPreview && _renderTakePhotoButton()}
+                {isMulti
+                    ? hasPhoto && _renderBottomButton(okLabel, _clickOK)
+                    : isPreview && _renderBottomButton(buttonName, _clickOK)}
             </View>
         );
     };
 
-    _renderPreviewButton = () => {
-        const text = '' + this.state.data.length + '/' + this.props.maxSize;
+    const _renderPreviewButton = () => {
+        const text = `${data.length}/${maxSize}`;
         return (
-            <TouchableOpacity onPress={this._clickPreview} style={styles.previewTouch}>
+            <TouchableOpacity onPress={_clickPreview} style={styles.previewTouch}>
                 <View style={styles.previewView}>
                     <Image
                         style={styles.previewImage}
-                        source={{ uri: this.state.data[this.state.data.length - 1].uri }}
+                        source={{ uri: data[data.length - 1].uri }}
                     />
-                    <Text style={styles.previewText}>
-                        {text}
-                    </Text>
+                    <Text style={styles.previewText}>{text}</Text>
                 </View>
             </TouchableOpacity>
         );
     };
 
-    _renderBottomButton = (text, onPress) => {
-        return (
-            <TouchableOpacity onPress={onPress} style={styles.buttonTouch}>
-                <Text style={styles.buttonText}>
-                    {text}
-                </Text>
-            </TouchableOpacity>
-        );
-    };
+    const _renderBottomButton = (text: string, onPress: () => void) => (
+        <TouchableOpacity onPress={onPress} style={styles.buttonTouch}>
+            <Text style={styles.buttonText}>{text}</Text>
+        </TouchableOpacity>
+    );
 
-    _renderTakePhotoButton = () => {
-        const safeArea = getSafeAreaInset();
-        const left = (Dimensions.get('window').width - safeArea.left - safeArea.right - bottomHeight) / 2;
-        const icon = this.state.isRecording ?
-            require('./images/video_recording.png') :
-            require('./images/shutter.png');
+    const _renderTakePhotoButton = () => {
+        const containerWidth = layoutWidth - insets.left - insets.right;
+        const left = (containerWidth - bottomHeight) / 2;
+        const icon = isRecording
+            ? require('./images/video_recording.png')
+            : require('./images/shutter.png');
         return (
             <TouchableOpacity
-                onPress={this.props.isVideo ? this._clickRecordVideo : this._clickTakePicture}
+                onPress={isVideo ? _clickRecordVideo : _clickTakePicture}
                 style={[styles.takeView, { left }]}
             >
                 <Image style={styles.takeImage} source={icon} />
@@ -212,165 +239,177 @@ export default class extends React.PureComponent {
         );
     };
 
-    _onFinish = (data) => {
-        this.props.callback && this.props.callback(data);
+    const _onFinish = (finishData: typeof data) => {
+        callback?.(finishData);
     };
 
-    _onDeletePageFinish = (data) => {
-        this.setState({
-            data: [...data],
-        });
+    const _onDeletePageFinish = (newData: typeof data) => {
+        setData([...newData]);
     };
 
-    _getImageSize = (path) => {
+    const _getImageSize = (path: string): Promise<{ width: number; height: number }> => {
         return new Promise((resolve, reject) => {
-            Image.getSize(path, (width, height) => resolve({ width, height }), () => reject());
+            Image.getSize(path, (w, h) => resolve({ width: w, height: h }), reject);
         });
-    }
+    };
 
-    _clickTakePicture = async () => {
-        if(this.takePictureing) return;
-        if (this.camera) {
-            try {
-                this.takePictureing = true;
-                let item = await this.camera.takePictureAsync({
-                    mirrorImage: this.state.sideType === RNCamera.Constants.Type.front,
-                    fixOrientation: true,
-                    forceUpOrientation: true,
-                    ...(this.props.waterView ? { orientation: 1 } : {}),
-                    ...this.props.pictureOptions
-                });
-                if (Platform.OS === 'ios') {
-                    if (item.uri.startsWith('file://')) {
-                        item.uri = item.uri.substring(7);
-                    }
-                }
-                if (this.viewShot) {
-                    const watermarkImage = await this.viewShot.capture();
-                    const { width, height } = await this._getImageSize(watermarkImage);
-                    const resizedImage = await ImageResizer.createResizedImage(
-                        item.uri,
-                        width,
-                        height,
-                        'PNG',
-                        100,
-                    )
-                    const url = await ImageMarker.markImage({
-                        src: {uri: resizedImage.uri},
-                        markerSrc: { uri: watermarkImage },
-                        position: Position.center,
-                        scale: 1,
-                        quality: 100,
-                        markerScale: 1,
-                    })
-                    item = {
-                        ...item,
-                        uri: (Platform.OS === "android" ? "file://" : "") + url,
-                        width,
-                        height,
-                    };
-                }
-                this.takePictureing = false;
-                if (this.props.maxSize > 1) {
-                    if (this.state.data.length >= this.props.maxSize) {
-                        Alert.alert('', this.props.maxSizeTakeAlert(this.props.maxSize));
-                    } else {
-                        this.setState({
-                            data: [...this.state.data, item],
-                        });
-                    }
-                } else {
-                    this.setState({
-                        data: [item],
-                        isPreview: true,
-                    });
-                }
-            } catch (err) {
-                Sentry.captureMessage('相机拍照异常', {
-                    extra: {
-                        message: err
+    const _clickTakePicture = async () => {
+        if (takingPicture) return;
+        if (!cameraRef.current) return;
+        try {
+            setTakingPicture(true);
+            let item = await cameraRef.current.takePhoto({
+                flash: currentFlashMode,
+                enableShutterSound: false,
+            });
+            if (Platform.OS === 'ios' && item.path.startsWith('file://')) {
+                item.path = item.path.substring(7);
+            }
+            const prefix = Platform.select({
+                ios: '',
+                android: 'file://',
+                harmony: 'file://',
+                default: '',
+            })!;
+            let itemPath = `${prefix}${item.path}`;
+
+            // Android: handle landscape photo from sensor
+            if (item.width > item.height && Platform.OS === 'android') {
+                const rotatedImage = await ImageResizer.createResizedImage(
+                    itemPath, item.height, item.width, 'JPEG', 100, 0,
+                );
+                item = { ...item, ...rotatedImage };
+                itemPath = `${prefix}${item.path}`;
+            }
+
+            // Watermark handling
+            if (viewShotRef.current) {
+                const watermarkImage = await viewShotRef.current.capture();
+                const { width: imgW, height: imgH } = await _getImageSize(`${prefix}${watermarkImage}`);
+
+                const fileCopy = Platform.select({
+                    default: async () => {},
+                    harmony: async () => {
+                        const destPath = `file://${RNFS.CachesDirectoryPath}/${Date.now()}.jpeg`;
+                        await RNFS.copyFile(itemPath, destPath);
+                        itemPath = destPath;
                     },
+                })!;
+                await fileCopy();
+
+                const resizedImage = await ImageResizer.createResizedImage(
+                    itemPath, imgW, imgH, 'PNG', 100, 0,
+                );
+                const url = await ImageMarker.markImage({
+                    backgroundImage: { src: resizedImage.uri },
+                    watermarkImages: [{ src: watermarkImage, position: { position: Position.center } }],
+                    quality: 100,
                 });
-                Toast.show(err.message || '相机拍照异常');
-
-                this.takePictureing = false;
-                this.camera.pausePreview();
-                this.camera.resumePreview();
+                const path = Platform.select({
+                    default: url,
+                    harmony: url.replace('cn.hecom.cloud.har', ''),
+                    android: `file://${url}`,
+                })!;
+                item = { ...item, path, width: imgW, height: imgH };
+                itemPath = path;
             }
-        }
-    };
 
-    _clickRecordVideo = () => {
-        if (this.camera) {
-            if (this.state.isRecording) {
-                this.camera.stopRecording();
-            } else {
-                this.setState({
-                    isRecording: true,
-                }, this._startRecording);
-            }
-        }
-    };
-
-    _startRecording = () => {
-        this.camera.recordAsync(this.props.recordingOptions)
-            .then((item) => {
-                if (Platform.OS === 'ios') {
-                    if (item.uri.startsWith('file://')) {
-                        item.uri = item.uri.substring(7);
-                    }
+            setTakingPicture(false);
+            if (maxSize > 1) {
+                if (data.length >= maxSize) {
+                    Alert.alert('', maxSizeTakeAlert?.(maxSize) || '');
+                } else {
+                    setData([...data, { ...item, uri: itemPath }]);
                 }
-                this.setState({
-                    data: [item],
-                    isRecording: false,
-                    isPreview: true,
-                });
-            });
+            } else {
+                setData([{ ...item, uri: itemPath }]);
+                setIsPreview(true);
+            }
+        } catch (err: any) {
+            Sentry.captureMessage('相机拍照异常', { extra: { message: err } });
+            Toast.show(err.message || '相机拍照异常');
+            setTakingPicture(false);
+        }
     };
 
-    _clickOK = () => {
-        this._onFinish(this.state.data);
+    const _clickRecordVideo = () => {
+        if (!cameraRef.current) return;
+        if (isRecording) {
+            cameraRef.current.stopRecording();
+        } else {
+            setIsRecording(true);
+            _startRecording();
+        }
     };
 
-    _clickSwitchSide = () => {
-        const target = this.state.sideType === RNCamera.Constants.Type.back
-            ? RNCamera.Constants.Type.front : RNCamera.Constants.Type.back;
-        this.setState({ sideType: target });
-    };
-
-    _clickFlashMode = () => {
-        const newMode = (this.state.flashMode + 1) % this.flashModes.length;
-        this.setState({ flashMode: newMode });
-    };
-
-    _clickPreview = () => {
-        this.props.navigation.navigate(PageKeys.preview, {
-            ...this.props,
-            images: this.state.data,
-            callback: this._onDeletePageFinish,
+    const _startRecording = () => {
+        cameraRef.current?.startRecording({
+            flash: currentFlashMode,
+            fileType: 'mp4',
+            onRecordingFinished: (item) => {
+                if (Platform.OS === 'ios' && item.path.startsWith('file://')) {
+                    item.path = item.path.substring(7);
+                }
+                const prefix = Platform.select({
+                    ios: '',
+                    android: 'file://',
+                    harmony: 'file://',
+                    default: '',
+                })!;
+                setData([{ ...item, uri: `${prefix}${item.path}` }]);
+                setIsRecording(false);
+                setIsPreview(true);
+            },
+            onRecordingError: (err) => {
+                Sentry.captureMessage('视频录制异常', { extra: { message: err } });
+                Toast.show(err.message || '视频录制异常');
+                setIsRecording(false);
+            },
         });
     };
 
-    _clickCancel = () => {
-        if (this.props.maxSize <= 1 && this.state.isPreview) {
-            this.setState({
-                data: [],
-                isPreview: false,
-            });
+    const _clickOK = () => _onFinish(data);
+
+    const _clickSwitchSide = () => {
+        setCurrentSideType(prev => prev === 'back' ? 'front' : 'back');
+    };
+
+    const _clickFlashMode = () => {
+        const idx = flashModes.indexOf(currentFlashMode);
+        setCurrentFlashMode(flashModes[(idx + 1) % flashModes.length]);
+    };
+
+    const _clickPreview = () => {
+        navigation?.navigate(PageKeys.preview, {
+            ...props,
+            images: data,
+            callback: _onDeletePageFinish,
+        });
+    };
+
+    const _clickCancel = () => {
+        if (maxSize <= 1 && isPreview) {
+            setData([]);
+            setIsPreview(false);
         } else {
-            this._onFinish([]);
+            _onFinish([]);
         }
     };
-}
 
-const topHeight = 60;
-const bottomHeight = 84;
+    return (
+        <View style={styles.container} onLayout={_onLayout}>
+            <StatusBar hidden={true} />
+            {!isPreview ? _renderCameraView() : _renderPreviewView()}
+            {!isPreview && _renderTopView()}
+            {_renderBottomView()}
+        </View>
+    );
+}
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: 'black',
-        marginTop: Platform.OS === 'ios' ? 0 : StatusBar.currentHeight,
     },
     top: {
         position: 'absolute',
@@ -385,10 +424,6 @@ const styles = StyleSheet.create({
         margin: 10,
         width: 27,
         height: 27,
-    },
-    camera: {
-        flex: 1,
-        justifyContent: 'flex-end',
     },
     bottom: {
         position: 'absolute',
@@ -437,7 +472,4 @@ const styles = StyleSheet.create({
         color: 'white',
         backgroundColor: 'transparent',
     },
-    viewShort: {
-        flex: 1, bottom: 0, top: 0, left: 0, right: 0, justifyContent: 'flex-end', position: 'absolute', backgroundColor: 'transparent'
-    }
 });
