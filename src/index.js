@@ -1,6 +1,7 @@
 import Navigation from '@hecom/navigation';
 import PageKeys from './PageKeys';
-import PhotoModalPage from './PhotoModalPage';
+import PreviewMultiView from './PreviewMultiView';
+import CameraPage from './CameraPage';
 import { Dimensions, Platform } from 'react-native';
 import { Picker as RNSyanImagePicker } from './Picker';
 
@@ -201,4 +202,4 @@ export default {
     getAlbum,
 };
 
-export { PhotoModalPage }
+export { PageKeys, CameraPage, PreviewMultiView };

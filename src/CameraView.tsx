@@ -1,7 +1,7 @@
 import ImageResizer from '@bam.tech/react-native-image-resizer';
 import * as Sentry from '@sentry/react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Dimensions, Image, Platform, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Dimensions, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import RNFS from 'react-native-fs';
 import ImageMarker, { Position } from 'react-native-image-marker';
 import Orientation from 'react-native-orientation-locker';
@@ -398,7 +398,6 @@ export default function CameraView(props: Props): React.ReactElement {
 
     return (
         <View style={styles.container} onLayout={_onLayout}>
-            <StatusBar hidden={true} />
             {!isPreview ? _renderCameraView() : _renderPreviewView()}
             {!isPreview && _renderTopView()}
             {_renderBottomView()}

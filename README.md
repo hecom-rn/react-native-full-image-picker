@@ -88,23 +88,6 @@ ImagePicker.XXX.defaultProps.yyy = ...;
 
 The `XXX` is the export items of library. Following is the detail.
 
-### PhotoModalPage
-
-This is the outter navigator for all modes. You can change these properties of `defaultProps`:
-
-| Name | Type | Description |
-| :-: | :-: | :- |
-| okLabel | string | OK button text |
-| cancelLabel | string | Cancel button text |
-| deleteLabel | string | Delete button text
-| useVideoLabel | string | UseVideo button text |
-| usePhotoLabel | string | UsePhoto button text |
-| previewLabel | string | Preview button text |
-| choosePhotoTitle | string | ChoosePhoto page title |
-| maxSizeChooseAlert | (num: number) => string | Max size limit alert message when choosing photos |
-| maxSizeTakeAlert | (num: number) => string | Max size limit alert message when taking photos from camera |
-| supportedOrientations | string[] | Supported orientations. Default is landscape and portrait |
-
 ### CameraView
 
 This is page for taking photos from camera or recording video. You can change these properties of `defaultProps`:
