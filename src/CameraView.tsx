@@ -144,6 +144,7 @@ export default function CameraView(props: Props): React.ReactElement {
                             audio={isVideo}
                             photo={!isVideo}
                             enableZoomGesture={true}
+                            outputOrientation="preview"
                             style={StyleSheet.absoluteFill}
                             {...cameraProps}
                         />
