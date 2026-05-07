@@ -65,7 +65,14 @@ export default function CameraView(props: Props): React.ReactElement {
     const cameraRef = useRef<Camera>(null);
     const viewShotRef = useRef<ViewShot>(null);
     const flashModes: Array<'off' | 'on'> = ['off', 'on'];
-    const [layoutSize, setLayoutSize] = useState(() => Dimensions.get('window'));
+    const [layoutSize, setLayoutSize] = useState(() => {
+        const { width, height } = Dimensions.get('window');
+        return { width: Math.min(width, height), height: Math.max(width, height) };
+    });
+    const [isPortraitLayout, setIsPortraitLayout] = useState(() => {
+        const { width, height } = Dimensions.get('window');
+        return height >= width;
+    });
 
     const { width: layoutWidth, height: layoutHeight } = layoutSize;
     const ratio = CAMERA_RATIO;
@@ -97,7 +104,8 @@ export default function CameraView(props: Props): React.ReactElement {
 
     const _onLayout = (e: any) => {
         const { width, height } = e.nativeEvent.layout;
-        setLayoutSize({ width, height });
+        setIsPortraitLayout(height >= width);
+        setLayoutSize({ width: Math.min(width, height), height: Math.max(width, height) });
     };
 
     const _renderTopView = () => {
@@ -133,7 +141,7 @@ export default function CameraView(props: Props): React.ReactElement {
             <View style={{ height: topH + insets.top }} />
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
                 <View style={{ width: cameraWidth, height: cameraHeight }}>
-                    {device && (
+                    {device && isPortraitLayout && (
                         <Camera
                             ref={cameraRef}
                             device={device}
@@ -149,7 +157,7 @@ export default function CameraView(props: Props): React.ReactElement {
                             {...cameraProps}
                         />
                     )}
-                    {waterView && (
+                    {waterView && isPortraitLayout && (
                         <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: 'transparent' }]}>
                             <ViewShot style={{ flex: 1 }} ref={viewShotRef}>
                                 {waterView()}
@@ -274,13 +282,13 @@ export default function CameraView(props: Props): React.ReactElement {
             })!;
             let itemPath = `${prefix}${item.path}`;
 
-            // Android: handle landscape photo from sensor
-            if (item.width > item.height && Platform.OS === 'android') {
+            // Handle landscape photo from sensor (applies to all platforms when device enters from landscape)
+            if (item.width > item.height) {
                 const rotatedImage = await ImageResizer.createResizedImage(
                     itemPath, item.height, item.width, 'JPEG', 100, 0,
                 );
                 item = { ...item, ...rotatedImage };
-                itemPath = `${prefix}${item.path}`;
+                itemPath = rotatedImage.uri;
             }
 
             // Watermark handling
