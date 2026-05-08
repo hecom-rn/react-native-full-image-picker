@@ -1,8 +1,10 @@
 import Navigation from '@hecom/navigation';
+import { Dimensions, Platform } from 'react-native';
+import CameraPage from './CameraPage';
 import PageKeys from './PageKeys';
 import PhotoModalPage from './PhotoModalPage';
-import { Dimensions, Platform } from 'react-native';
-import { Picker as RNSyanImagePicker} from './Picker';
+import { Picker as RNSyanImagePicker } from './Picker';
+import PreviewMultiView from './PreviewMultiView';
 
 const { width } = Dimensions.get('window');
 /**
@@ -24,7 +26,7 @@ const defaultOptions = {
     rotateEnabled: true,       // 裁剪是否可旋转图片
     scaleEnabled: true,        // 裁剪是否可放大缩小图片
     compress: true,
-    compressFocusAlpha:false,   //压缩png保留通明度
+    compressFocusAlpha: false,   //压缩png保留通明度
     minimumCompressSize: 100,  // 小于100kb的图片不压缩
     quality: 90,               // 压缩质量
     enableBase64: false,       // 是否返回base64编码，默认不返回
@@ -47,8 +49,8 @@ const defaultOptions = {
  * recordingOptions?: RNCamera.RecordingOptions Video.
  * callback: (data: any[]) => void. Donot use Alert.
  */
-const getCamera = (options) => showPicker(PageKeys.camera, {...options, isVideo: false});
-const getVideo = (options) => showPicker(PageKeys.camera, {...options, isVideo: true});
+const getCamera = (options) => showPicker(PageKeys.camera, { ...options, isVideo: false });
+const getVideo = (options) => showPicker(PageKeys.camera, { ...options, isVideo: true });
 const getAlbum = (options) => showImagePicker(options, callback);
 
 function showPicker(initialRouteName, options) {
@@ -201,4 +203,5 @@ export default {
     getAlbum,
 };
 
-export { PhotoModalPage }
+export { CameraPage, PageKeys, PhotoModalPage, PreviewMultiView };
+
