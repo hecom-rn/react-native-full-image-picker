@@ -288,7 +288,7 @@ export default function CameraView(props: Props): React.ReactElement {
                     itemPath, item.height, item.width, 'JPEG', 100, 0,
                 );
                 item = { ...item, ...rotatedImage };
-                itemPath = rotatedImage.path;
+                itemPath =  Platform.OS === 'ios' ? rotatedImage.path : rotatedImage.uri;
             }
 
             // Watermark handling
