@@ -134,5 +134,9 @@ export function getCachePath(callback: (path: null | string) => void): void;
 
   export function openVideoPicker (options:Partial<ImagePickerOption>,callback:(err:null|string,photos:Array<SelectedPhoto>)=>void): void;
 
-  export class PhotoModalPage {}
-
+export class CameraPage {}
+export class PreviewMultiView {}
+export const PageKeys: {
+    preview: string,
+    camera: string,
+}

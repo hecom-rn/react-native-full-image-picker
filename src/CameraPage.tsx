@@ -1,5 +1,4 @@
 import React from "react";
-import { BackHandler } from "react-native";
 import CameraView from './CameraView';
 
 
@@ -17,19 +16,6 @@ export default class CameraPage extends React.PureComponent {
         maxVideoFileSizeAlert: (number) => 'you can only choose video smaller than ' + number + 'MB',
         supportedOrientations: ['portrait', 'landscape'],
     };
-
-    // componentDidMount() {
-    //     BackHandler.addEventListener('hardwareBackPress', this._clickBack);
-    // }
-
-    // componentWillUnmount() {
-    //     BackHandler.removeEventListener('hardwareBackPress', this._clickBack);
-    // }
-
-    // _clickBack = () => {
-    //     this.props.onDestroy && this.props.onDestroy();
-    //     return true;
-    // };
 
     render() {
         return <CameraView {...this.props} />

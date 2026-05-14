@@ -1,6 +1,6 @@
+import NaviBar, { DEFAULT_NAVBAR_HEIGHT, getSafeAreaInset } from '@hecom/react-native-pure-navigation-bar';
 import React from 'react';
 import { Dimensions, Image, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
-import NaviBar, { DEFAULT_NAVBAR_HEIGHT, getSafeAreaInset } from '@hecom/react-native-pure-navigation-bar';
 
 export default class extends React.PureComponent {
     constructor(props) {

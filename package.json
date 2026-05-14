@@ -63,6 +63,7 @@
         "react-native-video": "*",
         "react-native-syan-image-picker": "*",
         "react-native-vision-camera": "*",
+        "react-native-safe-area-context": "*",
         "@hecom/react-native-pure-navigation-bar": "*",
         "react-native-root-siblings": "*",
         "@release-it/conventional-changelog": "^2.0.1",
