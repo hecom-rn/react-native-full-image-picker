@@ -34,7 +34,14 @@ type Result = PhotoFile | VideoFile;
 
 const topHeight = 60;
 const bottomHeight = 84;
-const CAMERA_RATIO = Platform.select({ harmony: 16 / 9, default: 4 / 3 })!;
+/*
+     鸿蒙上改回4:3， 因为 @react-native-ohos/react-native-vision-camera": "4.7.1"中
+     CameraConstants   public static readonly PHOTO_RATIO: number = 4 / 3;
+       public static readonly VIDEO_RATIO: number = 16 / 9;
+    现在并没有录制视频的需求，暂时统一设置为4:3.
+*/
+const CAMERA_RATIO = Platform.select({ harmony: 4 / 3, default: 4 / 3 })!;
+
 
 export default function CameraView(props: Props): React.ReactElement {
     const {
@@ -288,7 +295,7 @@ export default function CameraView(props: Props): React.ReactElement {
                     itemPath, item.height, item.width, 'JPEG', 100, 0,
                 );
                 item = { ...item, ...rotatedImage };
-                itemPath =  Platform.OS === 'ios' ? rotatedImage.path : rotatedImage.uri;
+                itemPath = Platform.OS === 'ios' ? rotatedImage.path : rotatedImage.uri;
             }
 
             // Watermark handling
@@ -297,7 +304,7 @@ export default function CameraView(props: Props): React.ReactElement {
                 const { width: imgW, height: imgH } = await _getImageSize(`${prefix}${watermarkImage}`);
 
                 const fileCopy = Platform.select({
-                    default: async () => {},
+                    default: async () => { },
                     harmony: async () => {
                         const destPath = `file://${RNFS.CachesDirectoryPath}/${Date.now()}.jpeg`;
                         await RNFS.copyFile(itemPath, destPath);
