@@ -164,6 +164,9 @@ export default function CameraView(props: Props): React.ReactElement {
                             photo={!isVideo}
                             enableZoomGesture={true}
                             outputOrientation="preview"
+                            // SurfaceView（默认）在锁竖屏 App + 阔折内屏展开（display rotation≠0）时
+                            // CameraX 变换补偿缺陷导致预览 180° 颠倒；TextureView 走应用侧矩阵补偿行为正确
+                            androidPreviewViewType="texture-view"
                             style={StyleSheet.absoluteFill}
                             {...cameraProps}
                         />
