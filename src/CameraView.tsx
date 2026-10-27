@@ -9,7 +9,8 @@ import Toast from 'react-native-root-toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Video from 'react-native-video';
 import ViewShot from 'react-native-view-shot';
-import { Camera, CameraProps, PhotoFile, useCameraDevice, useCameraFormat, VideoFile } from 'react-native-vision-camera';
+import { Camera, CameraProps, PhotoFile, getCameraDevice, useCameraDevices, useCameraFormat, VideoFile } from 'react-native-vision-camera';
+import { filterDevicesWithFormats } from './deviceFilters';
 import PageKeys from './PageKeys';
 
 type Props = {
@@ -97,7 +98,10 @@ export default function CameraView(props: Props): React.ReactElement {
     const bottomH = Math.max(remainingH * 0.75, bottomHeight);
     const topH = Math.max(0, remainingH - bottomH);
 
-    const device = useCameraDevice(currentSideType);
+    // 先过滤零 format 设备再选：阔折/多摄设备（如 Pura X）会枚举出无任何 format 的
+    // 逻辑摄像头，useCameraFormat 选中即渲染期抛 invalid-device 闪退（bug 71203297）
+    const allDevices = useCameraDevices();
+    const device = getCameraDevice(filterDevicesWithFormats(allDevices), currentSideType);
     const format = useCameraFormat(device, [
         { photoAspectRatio: ratio, photoResolution: { width: picWidth, height: picWidth * ratio } }
     ]);
