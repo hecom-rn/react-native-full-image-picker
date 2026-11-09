@@ -112,107 +112,34 @@ export default function CameraView(props: Props): React.ReactElement {
         { photoAspectRatio: ratio, photoResolution: { width: picWidth, height: picWidth * ratio } }
     ]);
 
-    // 方向策略（华为官方《相机硬件差异》规则，按窗口断点分级）：
-    // min(宽,高) ≥ 600vp（折叠屏展开态/平板）→ 受旋转锁控制的自动旋转
-    //   （ohos 宿主 patch 后的 unlockAllOrientations = AUTO_ROTATION_RESTRICTED），
-    //   与系统相机管线发出的方向纠正请求天然一致，消除横竖竞态；
+    // 方向策略（三端一致，对齐应用默认行为 = unlockAllOrientations 跟随系统设置）：
+    // min(宽,高) ≥ 600vp（折叠屏展开态/平板）→ 跟随系统（与系统相机管线的方向
+    //   纠正请求天然一致，消除横竖竞态）；
     // 小窗口（直板机/折叠态）→ 锁竖屏。
-    // 折叠形态可在相机页打开期间切换（展开↔收起），断点必须按实时窗口尺寸判定，
-    // 由容器 onLayout 驱动（Dimensions 静态快照在折叠切换后会拿到旧值）。
-    const savedOrientationRef = useRef<string>('UNKNOWN');
-    const savedOrientationCapturedRef = useRef(false);
-    const lockedPortraitRef = useRef(false);
-    const [windowMinEdge, setWindowMinEdge] = useState(() => {
+    // 断点只信窗口尺寸（Dimensions），不认容器 onLayout：进页过渡期容器首帧
+    // 可能是临时布局（短边偏小），据它判断会误锁竖屏再被纠回，表现为方向弹跳。
+    const applyOrientation = () => {
         const { width, height } = Dimensions.get('window');
-        return Math.min(width, height);
-    });
-
-    // harmony：断点分级策略（首次挂载 + 折叠形态切换时施加）
-    useEffect(() => {
-        if (Platform.OS !== 'harmony') return;
-        // 进入相机页前的窗口方向只在首次记录（断点变化时不能覆盖，否则丢失恢复基准）
-        if (!savedOrientationCapturedRef.current) {
-            savedOrientationCapturedRef.current = true;
-            Orientation.getOrientation((orientation) => {
-                savedOrientationRef.current = orientation || 'UNKNOWN';
-            });
-        }
-        if (windowMinEdge >= 600) {
-            Orientation.unlockAllOrientations();
-            lockedPortraitRef.current = false;
-        } else {
+        const minEdge = Math.min(width, height);
+        if (minEdge < 600) {
             Orientation.lockToPortrait();
-            lockedPortraitRef.current = true;
+        } else {
+            Orientation.unlockAllOrientations();
         }
-    }, [windowMinEdge]);
+    };
 
-    // harmony：卸载时恢复进入前方向（仅当最后处于锁竖屏策略才需要恢复）；
-    // 延迟执行，避免与相机 XComponent 销毁时系统发出的方向纠正请求竞态
+    // 挂载即按窗口尺寸同步施加；折叠形态切换（含拍摄页打开期间收起↔展开）由
+    // change 事件驱动；卸载一律恢复应用默认（unlockAllOrientations，三端一致），
+    // harmony 延迟执行，避免与相机 XComponent 销毁时系统发出的方向纠正请求竞态。
     useEffect(() => {
-        if (Platform.OS !== 'harmony') return;
+        applyOrientation();
+        const sub = Dimensions.addEventListener?.('change', applyOrientation);
         return () => {
-            const restore = () => {
-                const saved = savedOrientationRef.current;
-                if (!lockedPortraitRef.current || saved === 'UNKNOWN') {
-                    Orientation.unlockAllOrientations();
-                    return;
-                }
-                switch (saved) {
-                    case 'PORTRAIT':
-                        Orientation.lockToPortrait();
-                        break;
-                    case 'PORTRAIT-UPSIDEDOWN':
-                        Orientation.lockToPortraitUpsideDown();
-                        break;
-                    case 'LANDSCAPE-LEFT':
-                        Orientation.lockToLandscapeLeft();
-                        break;
-                    case 'LANDSCAPE-RIGHT':
-                        Orientation.lockToLandscapeRight();
-                        break;
-                    default:
-                        Orientation.unlockAllOrientations();
-                }
-            };
-            setTimeout(restore, 400);
-        };
-    }, []);
-
-    // Android/iOS：维持原行为（进入锁竖屏；Android 退出按 B 修复恢复，iOS 解锁）
-    useEffect(() => {
-        if (Platform.OS === 'harmony') return;
-        Orientation.getOrientation((orientation) => {
-            savedOrientationRef.current = orientation || 'UNKNOWN';
-        });
-        Orientation.lockToPortrait();
-        return () => {
-            const restore = () => {
-                const saved = savedOrientationRef.current;
-                if (saved === 'UNKNOWN') {
-                    Orientation.unlockAllOrientations();
-                    return;
-                }
-                switch (saved) {
-                    case 'PORTRAIT':
-                        Orientation.lockToPortrait();
-                        break;
-                    case 'PORTRAIT-UPSIDEDOWN':
-                        Orientation.lockToPortraitUpsideDown();
-                        break;
-                    case 'LANDSCAPE-LEFT':
-                        Orientation.lockToLandscapeLeft();
-                        break;
-                    case 'LANDSCAPE-RIGHT':
-                        Orientation.lockToLandscapeRight();
-                        break;
-                    default:
-                        Orientation.unlockAllOrientations();
-                }
-            };
-            if (Platform.OS === 'ios') {
-                Orientation.unlockAllOrientations();
+            sub?.remove?.();
+            if (Platform.OS === 'harmony') {
+                setTimeout(() => Orientation.unlockAllOrientations(), 400);
             } else {
-                setTimeout(restore, 400);
+                Orientation.unlockAllOrientations();
             }
         };
     }, []);
@@ -220,7 +147,6 @@ export default function CameraView(props: Props): React.ReactElement {
     const _onLayout = (e: any) => {
         const { width, height } = e.nativeEvent.layout;
         setLayoutSize({ width, height });
-        setWindowMinEdge(Math.min(width, height));
     };
 
     const _renderTopView = () => {
@@ -389,9 +315,6 @@ export default function CameraView(props: Props): React.ReactElement {
                 flash: currentFlashMode,
                 enableShutterSound: false,
             });
-            // TEMP-DEBUG REMOVED after verification: photo metadata values were
-            // orientation=portrait width=6144 height=8192 on Mate XT (landscape pixels,
-            // portrait metadata) — kept in git history of this commit's message.
             if (Platform.OS === 'ios' && item.path.startsWith('file://')) {
                 item.path = item.path.substring(7);
             }
@@ -405,8 +328,8 @@ export default function CameraView(props: Props): React.ReactElement {
 
             // Handle landscape photo from sensor: 横向像素照片转竖向。
             // ohos 移植版 vision-camera 返回的 width/height（还对调过）与 orientation
-            // 均为拍摄请求元数据，与实际保存的像素方向不符（真机实测：元数据 portrait
-            // 像素横排），故 harmony 以文件像素尺寸为准；Android/iOS 的 width/height
+            // 均为拍摄请求元数据，与实际保存的像素方向不符（元数据 portrait、像素
+            // 横排），故 harmony 以文件像素尺寸为准；Android/iOS 的 width/height
             // 即像素尺寸，维持原判断。
             // 另注意 ohos 版 image-resizer 先按原图算缩放再旋转（顺序颠倒）：
             // 传交换后的宽高会把旋转结果压回横向，故传原图像素宽高使缩放为 1:1 仅旋转，
@@ -424,7 +347,7 @@ export default function CameraView(props: Props): React.ReactElement {
             // 超大图（如部分机型无匹配拍照格式时回退全分辨率 49MP）旋转/重打包会长时间阻塞
             // 甚至内存失败，直接按原样交付横照片——横屏握持下内容方向本身正确
             if (isLandscapePhoto) {
-                // ohos pixelMap.rotate 为顺时针，实测横躺照片顺时针旋转 90° 即直立
+                // ohos pixelMap.rotate 为顺时针，横躺照片顺时针旋转 90° 即直立
                 const rotatedImage = await ImageResizer.createResizedImage(
                     itemPath, pixelWidth, pixelHeight, 'JPEG', 100, 90,
                 );
