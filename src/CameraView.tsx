@@ -75,24 +75,30 @@ export default function CameraView(props: Props): React.ReactElement {
     const flashModes: Array<'off' | 'on'> = ['off', 'on'];
     const [layoutSize, setLayoutSize] = useState(() => {
         const { width, height } = Dimensions.get('window');
-        return { width: Math.min(width, height), height: Math.max(width, height) };
-    });
-    const [isPortraitLayout, setIsPortraitLayout] = useState(() => {
-        const { width, height } = Dimensions.get('window');
-        return height >= width;
+        return { width, height };
     });
 
     const { width: layoutWidth, height: layoutHeight } = layoutSize;
     const ratio = CAMERA_RATIO;
     const availableHeight = layoutHeight - insets.top - insets.bottom;
 
-    // Foldable screen support: cap camera width so viewfinder fits
+    // Foldable screen support: cap camera so viewfinder fits, in both window orientations.
+    // 取景条保持竖向 4:3（拍摄与照片补偿链路产出竖向照片），横屏窗口下垂直居中成取景条
     const maxCameraHeight = Math.max(0, availableHeight - bottomHeight);
-    const idealCameraHeight = layoutWidth * ratio;
-    const cameraWidth = idealCameraHeight > maxCameraHeight
-        ? Math.min(layoutWidth, maxCameraHeight / ratio)
-        : layoutWidth;
-    const cameraHeight = cameraWidth * ratio;
+    const isPortraitWindow = layoutHeight >= layoutWidth;
+    let cameraWidth: number;
+    let cameraHeight: number;
+    if (isPortraitWindow) {
+        const idealCameraHeight = layoutWidth * ratio;
+        cameraWidth = idealCameraHeight > maxCameraHeight
+            ? Math.min(layoutWidth, maxCameraHeight / ratio)
+            : layoutWidth;
+        cameraHeight = cameraWidth * ratio;
+    } else {
+        const idealCameraWidth = maxCameraHeight / ratio;
+        cameraHeight = idealCameraWidth > layoutWidth ? layoutWidth * ratio : maxCameraHeight;
+        cameraWidth = cameraHeight / ratio;
+    }
 
     const remainingH = Math.max(0, availableHeight - cameraHeight);
     const bottomH = Math.max(remainingH * 0.75, bottomHeight);
@@ -114,6 +120,18 @@ export default function CameraView(props: Props): React.ReactElement {
     const savedOrientationRef = useRef<string>('UNKNOWN');
 
     useEffect(() => {
+        // 华为官方《相机硬件差异》取景页方向规则：按窗口断点分级。
+        // min(宽,高) ≥ 600vp（折叠屏展开态/平板）：受旋转锁控制的自动旋转，
+        // 尊重系统旋转锁，且与系统相机管线发出的方向纠正请求天然一致，消除横竖竞态；
+        // 小窗口（直板机/折叠态）：锁竖屏。
+        // ohos 宿主 patch 后的 unlockAllOrientations = AUTO_ROTATION_RESTRICTED，即受锁自动旋转。
+        if (Platform.OS === 'harmony') {
+            const { width, height } = Dimensions.get('window');
+            if (Math.min(width, height) >= 600) {
+                Orientation.unlockAllOrientations();
+                return; // 窗口方向未被本页改变，退出时无需恢复
+            }
+        }
         Orientation.getOrientation((orientation) => {
             savedOrientationRef.current = orientation || 'UNKNOWN';
         });
@@ -155,8 +173,7 @@ export default function CameraView(props: Props): React.ReactElement {
 
     const _onLayout = (e: any) => {
         const { width, height } = e.nativeEvent.layout;
-        setIsPortraitLayout(height >= width);
-        setLayoutSize({ width: Math.min(width, height), height: Math.max(width, height) });
+        setLayoutSize({ width, height });
     };
 
     const _renderTopView = () => {
@@ -192,7 +209,7 @@ export default function CameraView(props: Props): React.ReactElement {
             <View style={{ height: topH + insets.top }} />
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
                 <View style={{ width: cameraWidth, height: cameraHeight }}>
-                    {device && isPortraitLayout && (
+                    {device && (
                         <Camera
                             ref={cameraRef}
                             device={device}
@@ -211,7 +228,7 @@ export default function CameraView(props: Props): React.ReactElement {
                             {...cameraProps}
                         />
                     )}
-                    {waterView && isPortraitLayout && (
+                    {waterView && (
                         <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: 'transparent' }]}>
                             <ViewShot style={{ flex: 1 }} ref={viewShotRef}>
                                 {waterView()}
@@ -325,6 +342,9 @@ export default function CameraView(props: Props): React.ReactElement {
                 flash: currentFlashMode,
                 enableShutterSound: false,
             });
+            // TEMP-DEBUG REMOVED after verification: photo metadata values were
+            // orientation=portrait width=6144 height=8192 on Mate XT (landscape pixels,
+            // portrait metadata) — kept in git history of this commit's message.
             if (Platform.OS === 'ios' && item.path.startsWith('file://')) {
                 item.path = item.path.substring(7);
             }
@@ -336,12 +356,37 @@ export default function CameraView(props: Props): React.ReactElement {
             })!;
             let itemPath = `${prefix}${item.path}`;
 
-            // Handle landscape photo from sensor (applies to all platforms when device enters from landscape)
-            if (item.width > item.height) {
+            // Handle landscape photo from sensor: 横向像素照片转竖向。
+            // ohos 移植版 vision-camera 返回的 width/height（还对调过）与 orientation
+            // 均为拍摄请求元数据，与实际保存的像素方向不符（真机实测：元数据 portrait
+            // 像素横排），故 harmony 以文件像素尺寸为准；Android/iOS 的 width/height
+            // 即像素尺寸，维持原判断。
+            // 另注意 ohos 版 image-resizer 先按原图算缩放再旋转（顺序颠倒）：
+            // 传交换后的宽高会把旋转结果压回横向，故传原图像素宽高使缩放为 1:1 仅旋转，
+            // 并手动纠正 item 的宽高。
+            let pixelWidth = item.width;
+            let pixelHeight = item.height;
+            if (Platform.OS === 'harmony') {
+                const pixelSize = await _getImageSize(itemPath);
+                pixelWidth = pixelSize.width;
+                pixelHeight = pixelSize.height;
+            }
+            const isLandscapePhoto = Platform.OS === 'harmony'
+                ? pixelWidth > pixelHeight && pixelWidth * pixelHeight <= 24000000
+                : item.width > item.height;
+            // 超大图（如部分机型无匹配拍照格式时回退全分辨率 49MP）旋转/重打包会长时间阻塞
+            // 甚至内存失败，直接按原样交付横照片——横屏握持下内容方向本身正确
+            if (isLandscapePhoto) {
+                // ohos pixelMap.rotate 为顺时针，实测横躺照片顺时针旋转 90° 即直立
                 const rotatedImage = await ImageResizer.createResizedImage(
-                    itemPath, item.height, item.width, 'JPEG', 100, 0,
+                    itemPath, pixelWidth, pixelHeight, 'JPEG', 100, 90,
                 );
-                item = { ...item, ...rotatedImage };
+                item = {
+                    ...item,
+                    ...rotatedImage,
+                    width: pixelHeight,
+                    height: pixelWidth,
+                };
                 itemPath = Platform.OS === 'ios' ? rotatedImage.path : rotatedImage.uri;
             }
 
