@@ -112,26 +112,75 @@ export default function CameraView(props: Props): React.ReactElement {
         { photoAspectRatio: ratio, photoResolution: { width: picWidth, height: picWidth * ratio } }
     ]);
 
-    // 阔折叠/三折叠（Pura X Max、Mate XT 展开态，自然方向为横屏）上系统旋转锁开启时：
-    // 进入时 lockToPortrait 把窗口拧到竖屏，退出后 unlockAllOrientations 不恢复方向，
-    // 窗口停留在竖屏且用户无法转回，导致拍照前后应用方向不一致。
-    // 因此进入时记录窗口方向，退出时显式恢复；旋转锁关闭或记录失败时保持上游 unlock 行为。
-    // 退出动作延迟执行，避免与相机 XComponent 销毁时系统发出的方向纠正请求竞态。
+    // 方向策略（华为官方《相机硬件差异》规则，按窗口断点分级）：
+    // min(宽,高) ≥ 600vp（折叠屏展开态/平板）→ 受旋转锁控制的自动旋转
+    //   （ohos 宿主 patch 后的 unlockAllOrientations = AUTO_ROTATION_RESTRICTED），
+    //   与系统相机管线发出的方向纠正请求天然一致，消除横竖竞态；
+    // 小窗口（直板机/折叠态）→ 锁竖屏。
+    // 折叠形态可在相机页打开期间切换（展开↔收起），断点必须按实时窗口尺寸判定，
+    // 由容器 onLayout 驱动（Dimensions 静态快照在折叠切换后会拿到旧值）。
     const savedOrientationRef = useRef<string>('UNKNOWN');
+    const savedOrientationCapturedRef = useRef(false);
+    const lockedPortraitRef = useRef(false);
+    const [windowMinEdge, setWindowMinEdge] = useState(() => {
+        const { width, height } = Dimensions.get('window');
+        return Math.min(width, height);
+    });
 
+    // harmony：断点分级策略（首次挂载 + 折叠形态切换时施加）
     useEffect(() => {
-        // 华为官方《相机硬件差异》取景页方向规则：按窗口断点分级。
-        // min(宽,高) ≥ 600vp（折叠屏展开态/平板）：受旋转锁控制的自动旋转，
-        // 尊重系统旋转锁，且与系统相机管线发出的方向纠正请求天然一致，消除横竖竞态；
-        // 小窗口（直板机/折叠态）：锁竖屏。
-        // ohos 宿主 patch 后的 unlockAllOrientations = AUTO_ROTATION_RESTRICTED，即受锁自动旋转。
-        if (Platform.OS === 'harmony') {
-            const { width, height } = Dimensions.get('window');
-            if (Math.min(width, height) >= 600) {
-                Orientation.unlockAllOrientations();
-                return; // 窗口方向未被本页改变，退出时无需恢复
-            }
+        if (Platform.OS !== 'harmony') return;
+        // 进入相机页前的窗口方向只在首次记录（断点变化时不能覆盖，否则丢失恢复基准）
+        if (!savedOrientationCapturedRef.current) {
+            savedOrientationCapturedRef.current = true;
+            Orientation.getOrientation((orientation) => {
+                savedOrientationRef.current = orientation || 'UNKNOWN';
+            });
         }
+        if (windowMinEdge >= 600) {
+            Orientation.unlockAllOrientations();
+            lockedPortraitRef.current = false;
+        } else {
+            Orientation.lockToPortrait();
+            lockedPortraitRef.current = true;
+        }
+    }, [windowMinEdge]);
+
+    // harmony：卸载时恢复进入前方向（仅当最后处于锁竖屏策略才需要恢复）；
+    // 延迟执行，避免与相机 XComponent 销毁时系统发出的方向纠正请求竞态
+    useEffect(() => {
+        if (Platform.OS !== 'harmony') return;
+        return () => {
+            const restore = () => {
+                const saved = savedOrientationRef.current;
+                if (!lockedPortraitRef.current || saved === 'UNKNOWN') {
+                    Orientation.unlockAllOrientations();
+                    return;
+                }
+                switch (saved) {
+                    case 'PORTRAIT':
+                        Orientation.lockToPortrait();
+                        break;
+                    case 'PORTRAIT-UPSIDEDOWN':
+                        Orientation.lockToPortraitUpsideDown();
+                        break;
+                    case 'LANDSCAPE-LEFT':
+                        Orientation.lockToLandscapeLeft();
+                        break;
+                    case 'LANDSCAPE-RIGHT':
+                        Orientation.lockToLandscapeRight();
+                        break;
+                    default:
+                        Orientation.unlockAllOrientations();
+                }
+            };
+            setTimeout(restore, 400);
+        };
+    }, []);
+
+    // Android/iOS：维持原行为（进入锁竖屏；Android 退出按 B 修复恢复，iOS 解锁）
+    useEffect(() => {
+        if (Platform.OS === 'harmony') return;
         Orientation.getOrientation((orientation) => {
             savedOrientationRef.current = orientation || 'UNKNOWN';
         });
@@ -163,9 +212,6 @@ export default function CameraView(props: Props): React.ReactElement {
             if (Platform.OS === 'ios') {
                 Orientation.unlockAllOrientations();
             } else {
-                // harmony 不用 getAutoRotateState 门控：新版系统上读取旋转锁开关会失败
-                // 并降级返回 true，导致永远走不到恢复分支；直接显式恢复进入前方向
-                // （旋转锁关闭时该方向即持机时的自然方向，视觉等价）。
                 setTimeout(restore, 400);
             }
         };
@@ -174,6 +220,7 @@ export default function CameraView(props: Props): React.ReactElement {
     const _onLayout = (e: any) => {
         const { width, height } = e.nativeEvent.layout;
         setLayoutSize({ width, height });
+        setWindowMinEdge(Math.min(width, height));
     };
 
     const _renderTopView = () => {
