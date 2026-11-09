@@ -106,10 +106,50 @@ export default function CameraView(props: Props): React.ReactElement {
         { photoAspectRatio: ratio, photoResolution: { width: picWidth, height: picWidth * ratio } }
     ]);
 
+    // 阔折叠/三折叠（Pura X Max、Mate XT 展开态，自然方向为横屏）上系统旋转锁开启时：
+    // 进入时 lockToPortrait 把窗口拧到竖屏，退出后 unlockAllOrientations 不恢复方向，
+    // 窗口停留在竖屏且用户无法转回，导致拍照前后应用方向不一致。
+    // 因此进入时记录窗口方向，退出时显式恢复；旋转锁关闭或记录失败时保持上游 unlock 行为。
+    // 退出动作延迟执行，避免与相机 XComponent 销毁时系统发出的方向纠正请求竞态。
+    const savedOrientationRef = useRef<string>('UNKNOWN');
+
     useEffect(() => {
+        Orientation.getOrientation((orientation) => {
+            savedOrientationRef.current = orientation || 'UNKNOWN';
+        });
         Orientation.lockToPortrait();
         return () => {
-            Orientation.unlockAllOrientations();
+            const restore = () => {
+                const saved = savedOrientationRef.current;
+                if (saved === 'UNKNOWN') {
+                    Orientation.unlockAllOrientations();
+                    return;
+                }
+                switch (saved) {
+                    case 'PORTRAIT':
+                        Orientation.lockToPortrait();
+                        break;
+                    case 'PORTRAIT-UPSIDEDOWN':
+                        Orientation.lockToPortraitUpsideDown();
+                        break;
+                    case 'LANDSCAPE-LEFT':
+                        Orientation.lockToLandscapeLeft();
+                        break;
+                    case 'LANDSCAPE-RIGHT':
+                        Orientation.lockToLandscapeRight();
+                        break;
+                    default:
+                        Orientation.unlockAllOrientations();
+                }
+            };
+            if (Platform.OS === 'ios') {
+                Orientation.unlockAllOrientations();
+            } else {
+                // harmony 不用 getAutoRotateState 门控：新版系统上读取旋转锁开关会失败
+                // 并降级返回 true，导致永远走不到恢复分支；直接显式恢复进入前方向
+                // （旋转锁关闭时该方向即持机时的自然方向，视觉等价）。
+                setTimeout(restore, 400);
+            }
         };
     }, []);
 
