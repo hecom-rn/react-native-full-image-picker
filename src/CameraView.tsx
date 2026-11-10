@@ -75,30 +75,24 @@ export default function CameraView(props: Props): React.ReactElement {
     const flashModes: Array<'off' | 'on'> = ['off', 'on'];
     const [layoutSize, setLayoutSize] = useState(() => {
         const { width, height } = Dimensions.get('window');
-        return { width, height };
+        return { width: Math.min(width, height), height: Math.max(width, height) };
+    });
+    const [isPortraitLayout, setIsPortraitLayout] = useState(() => {
+        const { width, height } = Dimensions.get('window');
+        return height >= width;
     });
 
     const { width: layoutWidth, height: layoutHeight } = layoutSize;
     const ratio = CAMERA_RATIO;
     const availableHeight = layoutHeight - insets.top - insets.bottom;
 
-    // Foldable screen support: cap camera so viewfinder fits, in both window orientations.
-    // 取景条保持竖向 4:3（拍摄与照片补偿链路产出竖向照片），横屏窗口下垂直居中成取景条
+    // Foldable screen support: cap camera width so viewfinder fits
     const maxCameraHeight = Math.max(0, availableHeight - bottomHeight);
-    const isPortraitWindow = layoutHeight >= layoutWidth;
-    let cameraWidth: number;
-    let cameraHeight: number;
-    if (isPortraitWindow) {
-        const idealCameraHeight = layoutWidth * ratio;
-        cameraWidth = idealCameraHeight > maxCameraHeight
-            ? Math.min(layoutWidth, maxCameraHeight / ratio)
-            : layoutWidth;
-        cameraHeight = cameraWidth * ratio;
-    } else {
-        const idealCameraWidth = maxCameraHeight / ratio;
-        cameraHeight = idealCameraWidth > layoutWidth ? layoutWidth * ratio : maxCameraHeight;
-        cameraWidth = cameraHeight / ratio;
-    }
+    const idealCameraHeight = layoutWidth * ratio;
+    const cameraWidth = idealCameraHeight > maxCameraHeight
+        ? Math.min(layoutWidth, maxCameraHeight / ratio)
+        : layoutWidth;
+    const cameraHeight = cameraWidth * ratio;
 
     const remainingH = Math.max(0, availableHeight - cameraHeight);
     const bottomH = Math.max(remainingH * 0.75, bottomHeight);
@@ -112,41 +106,17 @@ export default function CameraView(props: Props): React.ReactElement {
         { photoAspectRatio: ratio, photoResolution: { width: picWidth, height: picWidth * ratio } }
     ]);
 
-    // 方向策略（三端一致，对齐应用默认行为 = unlockAllOrientations 跟随系统设置）：
-    // min(宽,高) ≥ 600vp（折叠屏展开态/平板）→ 跟随系统（与系统相机管线的方向
-    //   纠正请求天然一致，消除横竖竞态）；
-    // 小窗口（直板机/折叠态）→ 锁竖屏。
-    // 断点只信窗口尺寸（Dimensions），不认容器 onLayout：进页过渡期容器首帧
-    // 可能是临时布局（短边偏小），据它判断会误锁竖屏再被纠回，表现为方向弹跳。
-    const applyOrientation = () => {
-        const { width, height } = Dimensions.get('window');
-        const minEdge = Math.min(width, height);
-        if (minEdge < 600) {
-            Orientation.lockToPortrait();
-        } else {
-            Orientation.unlockAllOrientations();
-        }
-    };
-
-    // 挂载即按窗口尺寸同步施加；折叠形态切换（含拍摄页打开期间收起↔展开）由
-    // change 事件驱动；卸载一律恢复应用默认（unlockAllOrientations，三端一致），
-    // harmony 延迟执行，避免与相机 XComponent 销毁时系统发出的方向纠正请求竞态。
     useEffect(() => {
-        applyOrientation();
-        const sub = Dimensions.addEventListener?.('change', applyOrientation);
+        Orientation.lockToPortrait();
         return () => {
-            sub?.remove?.();
-            if (Platform.OS === 'harmony') {
-                setTimeout(() => Orientation.unlockAllOrientations(), 400);
-            } else {
-                Orientation.unlockAllOrientations();
-            }
+            Orientation.unlockAllOrientations();
         };
     }, []);
 
     const _onLayout = (e: any) => {
         const { width, height } = e.nativeEvent.layout;
-        setLayoutSize({ width, height });
+        setIsPortraitLayout(height >= width);
+        setLayoutSize({ width: Math.min(width, height), height: Math.max(width, height) });
     };
 
     const _renderTopView = () => {
@@ -182,7 +152,7 @@ export default function CameraView(props: Props): React.ReactElement {
             <View style={{ height: topH + insets.top }} />
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
                 <View style={{ width: cameraWidth, height: cameraHeight }}>
-                    {device && (
+                    {device && isPortraitLayout && (
                         <Camera
                             ref={cameraRef}
                             device={device}
@@ -201,7 +171,7 @@ export default function CameraView(props: Props): React.ReactElement {
                             {...cameraProps}
                         />
                     )}
-                    {waterView && (
+                    {waterView && isPortraitLayout && (
                         <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: 'transparent' }]}>
                             <ViewShot style={{ flex: 1 }} ref={viewShotRef}>
                                 {waterView()}
@@ -326,37 +296,12 @@ export default function CameraView(props: Props): React.ReactElement {
             })!;
             let itemPath = `${prefix}${item.path}`;
 
-            // Handle landscape photo from sensor: 横向像素照片转竖向。
-            // ohos 移植版 vision-camera 返回的 width/height（还对调过）与 orientation
-            // 均为拍摄请求元数据，与实际保存的像素方向不符（元数据 portrait、像素
-            // 横排），故 harmony 以文件像素尺寸为准；Android/iOS 的 width/height
-            // 即像素尺寸，维持原判断。
-            // 另注意 ohos 版 image-resizer 先按原图算缩放再旋转（顺序颠倒）：
-            // 传交换后的宽高会把旋转结果压回横向，故传原图像素宽高使缩放为 1:1 仅旋转，
-            // 并手动纠正 item 的宽高。
-            let pixelWidth = item.width;
-            let pixelHeight = item.height;
-            if (Platform.OS === 'harmony') {
-                const pixelSize = await _getImageSize(itemPath);
-                pixelWidth = pixelSize.width;
-                pixelHeight = pixelSize.height;
-            }
-            const isLandscapePhoto = Platform.OS === 'harmony'
-                ? pixelWidth > pixelHeight && pixelWidth * pixelHeight <= 24000000
-                : item.width > item.height;
-            // 超大图（如部分机型无匹配拍照格式时回退全分辨率 49MP）旋转/重打包会长时间阻塞
-            // 甚至内存失败，直接按原样交付横照片——横屏握持下内容方向本身正确
-            if (isLandscapePhoto) {
-                // ohos pixelMap.rotate 为顺时针，横躺照片顺时针旋转 90° 即直立
+            // Handle landscape photo from sensor (applies to all platforms when device enters from landscape)
+            if (item.width > item.height) {
                 const rotatedImage = await ImageResizer.createResizedImage(
-                    itemPath, pixelWidth, pixelHeight, 'JPEG', 100, 90,
+                    itemPath, item.height, item.width, 'JPEG', 100, 0,
                 );
-                item = {
-                    ...item,
-                    ...rotatedImage,
-                    width: pixelHeight,
-                    height: pixelWidth,
-                };
+                item = { ...item, ...rotatedImage };
                 itemPath = Platform.OS === 'ios' ? rotatedImage.path : rotatedImage.uri;
             }
 
