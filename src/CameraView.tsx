@@ -145,7 +145,7 @@ export default function CameraView(props: Props): React.ReactElement {
     }
 
     const _renderCameraView = () => (
-        <View style={StyleSheet.absoluteFill}>
+        <View style={[StyleSheet.absoluteFill, styles.cameraContainer]}>
             {device && (
                 <Camera
                     ref={cameraRef}
@@ -166,7 +166,14 @@ export default function CameraView(props: Props): React.ReactElement {
                     // SurfaceView（默认）在锁竖屏 App + 阔折内屏展开（display rotation≠0）时
                     // CameraX 变换补偿缺陷导致预览 180° 颠倒；TextureView 走应用侧矩阵补偿行为正确
                     androidPreviewViewType="texture-view"
-                    style={StyleSheet.absoluteFill}
+                    style={
+                        isHarmony
+                            ? StyleSheet.absoluteFill
+                            : // 上游 cover 是真铺满（裁切窗口比例外的 FOV），把取景器约束到
+                              // 与水印同框的 4:3 锚定框（居中），元素比例=预览流比例，
+                              // 无裁切、所见即所得，与鸿蒙移植版（内部 contain 居中）观感一致
+                              { width: wmWidth, height: wmHeight }
+                    }
                     {...cameraProps}
                 />
             )}
@@ -510,6 +517,10 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         backgroundColor: 'transparent',
+    },
+    cameraContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     watermarkAnchor: {
         alignItems: 'center',
