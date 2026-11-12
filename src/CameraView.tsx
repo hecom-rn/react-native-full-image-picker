@@ -16,7 +16,7 @@ import ImageMarker, { Position } from 'react-native-image-marker';
 import Toast from 'react-native-root-toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Video from 'react-native-video';
-import ViewShot from 'react-native-view-shot';
+import { captureRef } from 'react-native-view-shot';
 import {
     Camera,
     CameraProps,
@@ -44,8 +44,9 @@ import PageKeys from './PageKeys';
  *      矩形）先 contain 等比缩放进成片画布再居中盖章——握持==锁定方向时画幅
  *      一致、恰好全幅铺满、位置逐像素对位；握持≠锁定方向（如锁竖屏横拍，成片
  *      为横图）时不变形、完整落在图内，文字方向不强求与成片像素方向一致
- *      （产品决策）。永不落图外 = 修 70945454「横屏没有水印」。水印层 box-none
- *      透传（取景手势不受挡），水印块不可拖动由业务层无手势保证。
+ *      （产品决策）。永不落图外 = 修 70945454「横屏没有水印」。水印锚定层覆盖
+ *      取景框且 box-none 空域穿透（缩放手势直达 Camera，结构对齐产线），不可拖动
+ *      由业务层无手势保证。
  */
 
 type Props = {
@@ -113,7 +114,7 @@ export default function CameraView(props: Props): React.ReactElement {
     const [isRecording, setIsRecording] = useState(false);
     const [takingPicture, setTakingPicture] = useState(false);
     const cameraRef = useRef<Camera>(null);
-    const viewShotRef = useRef<ViewShot>(null);
+    const watermarkAnchorRef = useRef<any>(null);
     const flashModes: Array<'off' | 'on'> = ['off', 'on'];
     // 窗口尺寸直接挂 useWindowDimensions（旋转事件直驱）：比根容器 onLayout →
     // setState 的两段式早一拍，旋转后锚定框/快门位置不出现"先旧后新"的卡顿帧
@@ -145,53 +146,46 @@ export default function CameraView(props: Props): React.ReactElement {
     }
 
     const _renderCameraView = () => (
+        // 取景框结构对齐产线（产线验证此拓扑双指缩放可用）：居中容器 + 固定 4:3 取景
+        // 框，Camera 铺满框内（子节点，触摸/双指缩放直达，不再被兄弟层拦截）；水印
+        // 锚定层覆盖框内（box-none：空白区穿透到 Camera），截图只取锚定层 = 纯水印
+        //（不带取景像素），水印按成片方向合成的方案不变。不使用 ViewShot 组件包装。
         <View style={[StyleSheet.absoluteFill, styles.cameraContainer]}>
-            {device && (
-                <Camera
-                    ref={cameraRef}
-                    device={device}
-                    format={format}
-                    isActive={true}
-                    photo={!isVideo}
-                    video={isVideo}
-                    audio={isVideo}
-                    torch={isVideo ? currentFlashMode : 'off'}
-                    enableZoomGesture={true}
-                    // 取景器铺满不转（simple-camera 模型）：cover 裁切，预览方向由原生
-                    // 按窗口补偿。ohos 移植版 JS 默认即 cover，此处显式声明两端一致。
-                    resizeMode="cover"
-                    // 成片跟随物理握持（stock camera 行为）。ohos 移植版不消费该 prop
-                    // （原生按重力姿态补偿，行为等价）；Android/iOS 走上游 outputOrientation。
-                    outputOrientation="device"
-                    // SurfaceView（默认）在锁竖屏 App + 阔折内屏展开（display rotation≠0）时
-                    // CameraX 变换补偿缺陷导致预览 180° 颠倒；TextureView 走应用侧矩阵补偿行为正确
-                    androidPreviewViewType="texture-view"
-                    style={
-                        isHarmony
-                            ? StyleSheet.absoluteFill
-                            : // 上游 cover 是真铺满（裁切窗口比例外的 FOV），把取景器约束到
-                              // 与水印同框的 4:3 锚定框（居中），元素比例=预览流比例，
-                              // 无裁切、所见即所得，与鸿蒙移植版（内部 contain 居中）观感一致
-                              { width: wmWidth, height: wmHeight }
-                    }
-                    {...cameraProps}
-                />
-            )}
-            {waterView && (
-                // box-none 透传链（锚定层 + ViewShot 均转发 pointerEvents，见 view-shot
-                // 两端 patch）：水印框空白区域的触摸穿透到取景器（双指缩放/点按）；
-                // 水印块本身不可拖动由业务层无手势保证，未来恢复拖动直接包回
-                // PanResponderView 即可。
-                <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, styles.watermarkAnchor]}>
-                    <ViewShot
-                        ref={viewShotRef}
-                        style={{ width: wmWidth, height: wmHeight }}
+            <View style={{ width: wmWidth, height: wmHeight }}>
+                {device && (
+                    <Camera
+                        ref={cameraRef}
+                        device={device}
+                        format={format}
+                        isActive={true}
+                        photo={!isVideo}
+                        video={isVideo}
+                        audio={isVideo}
+                        torch={isVideo ? currentFlashMode : 'off'}
+                        enableZoomGesture={true}
+                        // 取景器铺满不转（simple-camera 模型）：cover 裁切，预览方向由原生
+                        // 按窗口补偿。ohos 移植版 JS 默认即 cover，此处显式声明两端一致。
+                        resizeMode="cover"
+                        // 成片跟随物理握持（stock camera 行为）。ohos 移植版不消费该 prop
+                        // （原生按重力姿态补偿，行为等价）；Android/iOS 走上游 outputOrientation。
+                        outputOrientation="device"
+                        // SurfaceView（默认）在锁竖屏 App + 阔折内屏展开（display rotation≠0）时
+                        // CameraX 变换补偿缺陷导致预览 180° 颠倒；TextureView 走应用侧矩阵补偿行为正确
+                        androidPreviewViewType="texture-view"
+                        style={StyleSheet.absoluteFill}
+                        {...cameraProps}
+                    />
+                )}
+                {waterView && (
+                    <View
+                        ref={watermarkAnchorRef}
                         pointerEvents="box-none"
+                        style={[StyleSheet.absoluteFill, styles.watermarkAnchor]}
                     >
                         {waterView()}
-                    </ViewShot>
-                </View>
-            )}
+                    </View>
+                )}
+            </View>
         </View>
     );
 
@@ -365,11 +359,18 @@ export default function CameraView(props: Props): React.ReactElement {
 
             // Watermark handling: 画幅基准 = 照片本身（已降采样到交付尺寸）。水印截图
             // （窗口向，锚定框见 wmWidth/wmHeight）按 contain 等比缩放进成片画布后
-            // 居中盖章：握持==锁定方向时画幅一致、恰好全幅铺满、位置逐像素对位；
+            // 居中盖章：握持==窗口方向时画幅一致、恰好全幅铺满、位置逐像素对位；
             // 握持≠锁定方向（如锁竖屏横拍、成片横图）时不变形、完整落在图内（文字
             // 方向不强求与成片一致——产品决策），修 70945454「横屏没有水印」。
-            if (viewShotRef.current) {
-                const watermarkImage = await viewShotRef.current.capture();
+            if (watermarkAnchorRef.current) {
+                // 只截锚定层（纯水印、透明底），不带走取景像素
+                const watermarkImage = await captureRef(watermarkAnchorRef, {
+                    format: 'png',
+                    quality: 1,
+                    result: 'tmpfile',
+                    snapshotContentContainer: false,
+                    handleGLSurfaceViewOnAndroid: false,
+                });
                 const stampSize = await _getImageSize(`${prefix}${watermarkImage}`);
                 // ViewShot 截图写在 ability temp 目录（非缓存根目录），ohos resizer
                 // 对这类路径走 fs.copy（实测 401），同样先复制到缓存根目录
