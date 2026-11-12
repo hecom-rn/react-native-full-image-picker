@@ -323,9 +323,48 @@ export default function CameraView(props: Props): React.ReactElement {
                 const resizedImage = await ImageResizer.createResizedImage(
                     itemPath, imgW, imgH, 'PNG', 100, 0,
                 );
+                // harmony：ohos PhotoManager 上报的 width/height 为交换值（恒竖图维度），且照片
+                // 像素画幅随重力/会话而变（横拍可能产出横幅正向，也可能产出竖幅正向），上报宽高
+                // 无法判断真实画幅。因此画布请求保持竖拍尺寸不变，以 resize 实际产出画幅为准：
+                // 横幅画布说明照片为横幅正向成片，此时整层竖幅水印快照无法直接贴合画布（居中
+                // 绘制时上下溢出被裁，水印不可见）。处理：把快照先拷入 cacheDir（resizer 对
+                // temp 目录走 fs.copy 会抛参数错误），再纯旋转 90°（传原尺寸使 scale 恒等）并
+                // 缩放到画布尺寸，最后平铺居中合成——与竖拍同机制，水印文字随成片旋转，观感
+                // 与取景器一致；竖幅画布走原行为。landscape-left（机顶朝左）握持下取景 UI 的
+                // 「上」指向成片 -X，水印逆时针转 90°（270），landscape-right 顺时针（90）
+                const bgIsLandscape = resizedImage.width > resizedImage.height;
+                let stampImage = watermarkImage;
+                if (bgIsLandscape) {
+                    const watermarkRotate = item.orientation === 'landscape-right' ? 90 : 270;
+                    const stampInCache = `${RNFS.CachesDirectoryPath}/${Date.now()}_wm.png`;
+                    await RNFS.copyFile(watermarkImage, stampInCache);
+                    const rotatedStamp = await ImageResizer.createResizedImage(
+                        `file://${stampInCache}`, imgW, imgH, 'PNG', 100, watermarkRotate,
+                    );
+                    stampImage = (await ImageResizer.createResizedImage(
+                        rotatedStamp.uri, resizedImage.width, resizedImage.height, 'PNG', 100, 0,
+                    )).uri;
+                }
                 const url = await ImageMarker.markImage({
-                    backgroundImage: { src: resizedImage.uri },
-                    watermarkImages: [{ src: watermarkImage, position: { position: Position.center } }],
+                    backgroundImage: {
+                        // src 携带显式尺寸：字符串 src 经 resolveAssetSource 得不到宽高，marker
+                        // 画布尺寸会退化为 0
+                        src: {
+                            uri: resizedImage.uri,
+                            width: resizedImage.width,
+                            height: resizedImage.height,
+                            scale: 1,
+                        },
+                    },
+                    watermarkImages: [{
+                        src: {
+                            uri: stampImage,
+                            width: resizedImage.width,
+                            height: resizedImage.height,
+                            scale: 1,
+                        },
+                        position: { position: Position.center },
+                    }],
                     quality: 100,
                 });
                 const path = Platform.select({
@@ -333,7 +372,12 @@ export default function CameraView(props: Props): React.ReactElement {
                     harmony: url.replace('cn.hecom.cloud.har', ''),
                     android: `file://${url}`,
                 })!;
-                item = { ...item, path, width: imgW, height: imgH };
+                item = {
+                    ...item,
+                    path,
+                    width: bgIsLandscape ? resizedImage.width : imgW,
+                    height: bgIsLandscape ? resizedImage.height : imgH,
+                };
                 itemPath = path;
             }
 
