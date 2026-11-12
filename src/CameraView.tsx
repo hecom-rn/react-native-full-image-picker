@@ -44,8 +44,8 @@ import PageKeys from './PageKeys';
  *      矩形）先 contain 等比缩放进成片画布再居中盖章——握持==锁定方向时画幅
  *      一致、恰好全幅铺满、位置逐像素对位；握持≠锁定方向（如锁竖屏横拍，成片
  *      为横图）时不变形、完整落在图内，文字方向不强求与成片像素方向一致
- *      （产品决策）。永不落图外 = 修 70945454「横屏没有水印」。水印层触摸不
- *      穿透、不可拖动为产品既定行为。
+ *      （产品决策）。永不落图外 = 修 70945454「横屏没有水印」。水印不参与触摸
+ *      （pointerEvents=none，不可拖动为产品既定），手势全部穿透到取景器。
  */
 
 type Props = {
@@ -178,7 +178,9 @@ export default function CameraView(props: Props): React.ReactElement {
                 />
             )}
             {waterView && (
-                <View style={[StyleSheet.absoluteFill, styles.watermarkAnchor]}>
+                // pointerEvents="none"：水印层整体不参与触摸（产品既定不可拖动），
+                // 双指缩放/点按等手势全部穿透到取景器；截图渲染不受 pointerEvents 影响
+                <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.watermarkAnchor]}>
                     <ViewShot ref={viewShotRef} style={{ width: wmWidth, height: wmHeight }}>
                         {waterView()}
                     </ViewShot>
