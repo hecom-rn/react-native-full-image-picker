@@ -44,8 +44,8 @@ import PageKeys from './PageKeys';
  *      矩形）先 contain 等比缩放进成片画布再居中盖章——握持==锁定方向时画幅
  *      一致、恰好全幅铺满、位置逐像素对位；握持≠锁定方向（如锁竖屏横拍，成片
  *      为横图）时不变形、完整落在图内，文字方向不强求与成片像素方向一致
- *      （产品决策）。永不落图外 = 修 70945454「横屏没有水印」。水印不参与触摸
- *      （pointerEvents=none，不可拖动为产品既定），手势全部穿透到取景器。
+ *      （产品决策）。永不落图外 = 修 70945454「横屏没有水印」。水印层 box-none
+ *      透传（取景手势不受挡），水印块不可拖动由业务层无手势保证。
  */
 
 type Props = {
@@ -178,10 +178,16 @@ export default function CameraView(props: Props): React.ReactElement {
                 />
             )}
             {waterView && (
-                // pointerEvents="none"：水印层整体不参与触摸（产品既定不可拖动），
-                // 双指缩放/点按等手势全部穿透到取景器；截图渲染不受 pointerEvents 影响
-                <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.watermarkAnchor]}>
-                    <ViewShot ref={viewShotRef} style={{ width: wmWidth, height: wmHeight }}>
+                // box-none 透传链（锚定层 + ViewShot 均转发 pointerEvents，见 view-shot
+                // 两端 patch）：水印框空白区域的触摸穿透到取景器（双指缩放/点按）；
+                // 水印块本身不可拖动由业务层无手势保证，未来恢复拖动直接包回
+                // PanResponderView 即可。
+                <View pointerEvents="box-none" style={[StyleSheet.absoluteFill, styles.watermarkAnchor]}>
+                    <ViewShot
+                        ref={viewShotRef}
+                        style={{ width: wmWidth, height: wmHeight }}
+                        pointerEvents="box-none"
+                    >
                         {waterView()}
                     </ViewShot>
                 </View>
