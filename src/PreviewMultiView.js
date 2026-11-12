@@ -1,13 +1,19 @@
-import NaviBar, { DEFAULT_NAVBAR_HEIGHT, getSafeAreaInset } from '@hecom/react-native-pure-navigation-bar';
+import NaviBar from '@hecom/react-native-pure-navigation-bar';
+import { withSafeAreaInsets } from 'react-native-safe-area-context';
 import React from 'react';
 import { Dimensions, Image, ScrollView, StatusBar, StyleSheet, View } from 'react-native';
 
-export default class extends React.PureComponent {
+class PreviewMultiView extends React.PureComponent {
     constructor(props) {
         super(props);
         this.state = {
             images: this.props.images,
             index: 0,
+            // 图片容器尺寸用 ScrollView 实测值（onLayout），不用「窗口 − 导航条/安全区」
+            // 推算：横屏下推算值偏大时元素整体高出可视区，图片底部被裁在可视区外
+            //（实测三折叠/Pura 横看横图底部缺一截；竖屏因 contain 上下留黑边而未暴露）
+            contentWidth: 0,
+            contentHeight: 0,
         };
     }
 
@@ -21,7 +27,7 @@ export default class extends React.PureComponent {
 
     render() {
         const title = '' + (this.state.index + 1) + '/' + this.state.images.length;
-        const safeArea = getSafeAreaInset();
+        const safeArea = this.props.insets;
         const style = {
             paddingLeft: safeArea.left,
             paddingRight: safeArea.right,
@@ -44,6 +50,7 @@ export default class extends React.PureComponent {
                     horizontal={true}
                     showsHorizontalScrollIndicator={false}
                     onScroll={this._onScroll}
+                    onLayout={this._onScrollViewLayout}
                 >
                     {this.state.images.map(this._renderItem)}
                 </ScrollView>
@@ -52,10 +59,14 @@ export default class extends React.PureComponent {
     }
 
     _renderItem = ({uri: path}, index) => {
-        const safeArea = getSafeAreaInset();
-        const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
-        const width = screenWidth - safeArea.left - safeArea.right;
-        const height = screenHeight - safeArea.top - safeArea.bottom - DEFAULT_NAVBAR_HEIGHT;
+        const safeArea = this.props.insets;
+        // 容器可视区 = ScrollView 实测尺寸减去其自身 padding（left/right/bottom），
+        // 不再推算导航条高度——图片 contain 等比缩放、完整可见（留黑边不裁剪）
+        const width = this.state.contentWidth - safeArea.left - safeArea.right;
+        const height = this.state.contentHeight - safeArea.bottom;
+        if (width <= 0 || height <= 0) {
+            return <View key={index} />;
+        }
         return (
             <View key={index} style={{width, height}}>
                 <Image
@@ -67,9 +78,19 @@ export default class extends React.PureComponent {
         );
     };
 
+    _onScrollViewLayout = (e) => {
+        const {width, height} = e.nativeEvent.layout;
+        if (width !== this.state.contentWidth || height !== this.state.contentHeight) {
+            this.setState({contentWidth: width, contentHeight: height});
+        }
+    };
+
     _onScroll = ({nativeEvent: {contentOffset: {x}}}) => {
-        const safeArea = getSafeAreaInset();
-        const width = Dimensions.get('window').width - safeArea.left - safeArea.right;
+        const safeArea = this.props.insets;
+        const width = this.state.contentWidth - safeArea.left - safeArea.right;
+        if (width <= 0) {
+            return;
+        }
         const index = Math.round(x / width);
         if (index < 0 || index >= this.state.images.length) {
             return;
@@ -116,3 +137,5 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
     },
 });
+
+export default withSafeAreaInsets(PreviewMultiView);
