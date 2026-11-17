@@ -1,7 +1,18 @@
 import ImageResizer from '@bam.tech/react-native-image-resizer';
 import * as Sentry from '@sentry/react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Dimensions, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+    Alert,
+    Dimensions,
+    Image,
+    PixelRatio,
+    Platform,
+    Pressable,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import RNFS from 'react-native-fs';
 import ImageMarker, { Position } from 'react-native-image-marker';
 import Orientation from 'react-native-orientation-locker';
@@ -101,7 +112,14 @@ export default function CameraView(props: Props): React.ReactElement {
     // 先过滤零 format 设备再选：阔折/多摄设备（如 Pura X）会枚举出无任何 format 的
     // 逻辑摄像头，useCameraFormat 选中即渲染期抛 invalid-device 闪退（bug 71203297）
     const allDevices = useCameraDevices();
-    const device = getCameraDevice(filterDevicesWithFormats(allDevices), currentSideType);
+    // bug 71252630：必须传 physicalDevices filter 让多摄虚拟设备胜出。不传时打分逻辑
+    // 会给物理镜头数多的设备降权（"we only want a simple camera"），导致单广角物理镜头
+    // 被选中——其最近对焦距离大（约 10cm+）且无镜头切换能力，越靠近拍摄越失焦；虚拟
+    // 设备才能获得系统自动微距/镜头切换（靠近自动切超广角合焦）。老机型无虚拟设备时
+    // 打分自然回退到单广角，不会崩。
+    const device = getCameraDevice(filterDevicesWithFormats(allDevices), currentSideType, {
+        physicalDevices: ['ultra-wide-angle-camera', 'wide-angle-camera', 'telephoto-camera'],
+    });
     const format = useCameraFormat(device, [
         { photoAspectRatio: ratio, photoResolution: { width: picWidth, height: picWidth * ratio } }
     ]);
@@ -117,6 +135,23 @@ export default function CameraView(props: Props): React.ReactElement {
         const { width, height } = e.nativeEvent.layout;
         setIsPortraitLayout(height >= width);
         setLayoutSize({ width: Math.min(width, height), height: Math.max(width, height) });
+    };
+
+    // bug 71252630：相机预览无点击对焦交互，靠近拍摄后（安卓部分 ROM 默认非连续对焦/
+    // iOS 超出最近对焦距离后回焦）画面持续失焦且用户无法手动触发对焦。接入系统相机
+    // 标配的 tap-to-focus：按下预览区即对该点对焦（vision-camera Camera.focus 接口双端
+    // 均已内建，此前未接线）。坐标按平台换算：iOS 的 locationX 为 point 直传；Android
+    // 为 px，须除 density 转 dp（原生层会再乘 density 还原成视图 px）。
+    const _onCameraPressIn = (e: any) => {
+        if (cameraRef.current == null) return;
+        const { locationX, locationY } = e.nativeEvent;
+        const x = Platform.OS === 'ios' ? locationX : locationX / PixelRatio.get();
+        const y = Platform.OS === 'ios' ? locationY : locationY / PixelRatio.get();
+        cameraRef.current
+            .focus({ x, y })
+            .catch(() => {
+                // 对焦失败（超时/对焦点不支持等）静默忽略，不干扰拍摄主流程
+            });
     };
 
     const _renderTopView = () => {
@@ -151,7 +186,10 @@ export default function CameraView(props: Props): React.ReactElement {
         <View style={{ flex: 1 }}>
             <View style={{ height: topH + insets.top }} />
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-                <View style={{ width: cameraWidth, height: cameraHeight }}>
+                <Pressable
+                    style={{ width: cameraWidth, height: cameraHeight }}
+                    onPressIn={_onCameraPressIn}
+                >
                     {device && isPortraitLayout && (
                         <Camera
                             ref={cameraRef}
@@ -178,7 +216,7 @@ export default function CameraView(props: Props): React.ReactElement {
                             </ViewShot>
                         </View>
                     )}
-                </View>
+                </Pressable>
             </View>
             <View style={{ height: bottomH + insets.bottom }} />
         </View>
